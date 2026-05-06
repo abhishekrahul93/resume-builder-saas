@@ -191,7 +191,7 @@ export default function Home() {
         <section className="uploadPanel" aria-label="Import existing CV">
           <div>
             <h2>Import Existing CV</h2>
-            <p>Upload a DOCX or TXT resume to fill the builder automatically.</p>
+            <p>Upload a PDF, DOCX, or TXT resume to fill the builder automatically.</p>
           </div>
           <label className="fileButton">
             {isImporting ? "Importing..." : "Upload CV"}

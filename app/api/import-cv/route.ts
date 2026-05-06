@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import mammoth from "mammoth";
+import { PDFParse } from "pdf-parse";
 
 type ImportedResume = {
   name: string;
@@ -99,7 +100,10 @@ async function extractText(file: File) {
   }
 
   if (name.endsWith(".pdf")) {
-    throw new Error("PDF upload is coming next. Please upload a DOCX or TXT version for now.");
+    const parser = new PDFParse({ data: buffer });
+    const result = await parser.getText();
+    await parser.destroy();
+    return result.text;
   }
 
   throw new Error("Unsupported file type. Please upload a DOCX or TXT file.");
