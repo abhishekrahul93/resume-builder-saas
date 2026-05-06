@@ -28,6 +28,11 @@ textarea {
   font: inherit;
 }
 
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
 button:disabled {
   cursor: wait;
   opacity: 0.72;
@@ -104,7 +109,8 @@ h1 {
 
 .primaryButton,
 .iconButton,
-.templateOption {
+.templateOption,
+.secondaryButton {
   border: 1px solid transparent;
   border-radius: 8px;
   cursor: pointer;
@@ -120,6 +126,21 @@ h1 {
 
 .primaryButton:hover {
   background: var(--accent-strong);
+}
+
+.secondaryButton {
+  display: grid;
+  place-items: center;
+  padding: 0 13px;
+  background: white;
+  border-color: var(--line);
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.secondaryButton:hover {
+  border-color: var(--accent);
+  color: var(--accent-strong);
 }
 
 .iconButton {
@@ -233,7 +254,8 @@ h1 {
   border-radius: 50%;
   background: #f5f7f6;
   color: white;
-  font-size: 0.72rem;
+  font-size: 0.48rem;
+  font-weight: 900;
 }
 
 .checkItem.done {
@@ -560,5 +582,409 @@ textarea:focus {
     width: 100%;
     min-height: 0;
     box-shadow: none;
+  }
+}
+
+.tailorShell {
+  min-height: 100vh;
+  background: #eef2ef;
+}
+
+.tailorHero {
+  padding: 26px 34px 34px;
+  background: var(--ink);
+  color: white;
+}
+
+.tailorNav,
+.tailorHeroGrid,
+.tailorWorkspace,
+.tailorInputs,
+.resultsGrid,
+.comparisonPanel {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+}
+
+.tailorNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 46px;
+}
+
+.brandLink {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 900;
+}
+
+.tailorHero .brandMark {
+  background: white;
+  color: var(--ink);
+}
+
+.tailorHero .secondaryButton {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.tailorHeroGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: 28px;
+  align-items: end;
+}
+
+.tailorHero h1 {
+  max-width: 760px;
+  margin-bottom: 14px;
+  font-size: clamp(2.3rem, 6vw, 4.8rem);
+  line-height: 0.98;
+}
+
+.tailorHero p:not(.eyebrow) {
+  max-width: 720px;
+  margin-bottom: 0;
+  color: #dfe8e2;
+  font-size: 1.08rem;
+  line-height: 1.55;
+}
+
+.tailorHeroCard {
+  display: grid;
+  place-items: center;
+  min-height: 180px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tailorHeroCard span {
+  font-size: 3.4rem;
+  font-weight: 950;
+}
+
+.tailorHeroCard small {
+  color: #dfe8e2;
+  font-weight: 800;
+}
+
+.tailorWorkspace {
+  display: grid;
+  gap: 24px;
+  padding: 28px 34px 48px;
+}
+
+.tailorInputs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.tailorCard,
+.resultCard,
+.scoreModule,
+.emptyState,
+.comparisonPanel,
+.actionDeck {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 14px 44px rgba(24, 34, 30, 0.08);
+}
+
+.tailorCard,
+.resultCard,
+.emptyState,
+.actionDeck {
+  padding: 20px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+}
+
+.cardHeader h2 {
+  margin-bottom: 0;
+  font-size: 1.08rem;
+}
+
+.countBadge {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 9px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.largeTextarea {
+  min-height: 310px;
+  resize: vertical;
+}
+
+.miniUpload {
+  display: grid;
+  place-items: center;
+  min-width: 104px;
+  min-height: 38px;
+  margin: 0;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: #f7faf8;
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.miniUpload input {
+  display: none;
+}
+
+.actionDeck {
+  display: grid;
+  gap: 14px;
+}
+
+.modeGrid,
+.quickImprove {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.modeButton,
+.quickImprove button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: white;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 13px;
+  font-weight: 800;
+}
+
+.modeButton.active,
+.quickImprove button:hover {
+  border-color: var(--accent);
+  background: #eff8f3;
+  color: var(--accent-strong);
+}
+
+.generateButton {
+  min-height: 52px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.generateButton:hover {
+  background: var(--accent-strong);
+}
+
+.errorBox,
+.noticeBox {
+  margin: 0;
+  border-radius: 8px;
+  padding: 12px 13px;
+  font-weight: 800;
+  line-height: 1.45;
+}
+
+.errorBox {
+  background: #fff1f0;
+  color: #9b1c1c;
+}
+
+.noticeBox {
+  background: #eff8f3;
+  color: var(--accent-strong);
+}
+
+.emptyState {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+}
+
+.emptyState p {
+  max-width: 560px;
+  color: var(--muted);
+}
+
+.resultsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.scoreModule {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 150px 1fr auto;
+  gap: 22px;
+  align-items: center;
+  padding: 22px;
+}
+
+.scoreModule p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.scoreRing {
+  display: grid;
+  place-items: center;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: conic-gradient(var(--accent) var(--score), #e3e9e5 0);
+}
+
+.scoreRing span {
+  display: grid;
+  place-items: center;
+  width: 94px;
+  height: 94px;
+  border-radius: 50%;
+  background: white;
+  color: var(--ink);
+  font-size: 2rem;
+  font-weight: 950;
+}
+
+.resultCard {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.resultCard p,
+.resultCard li,
+.comparisonPanel p,
+.comparisonPanel li {
+  color: #38443f;
+  line-height: 1.58;
+}
+
+.keywordBlock {
+  display: grid;
+  gap: 8px;
+}
+
+.keywordBlock h3 {
+  margin-bottom: 0;
+  color: var(--ink);
+  font-size: 0.88rem;
+}
+
+.keywordList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.keywordList span {
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.keywordList .matched {
+  background: #e9f7ee;
+  color: #14603f;
+}
+
+.keywordList .missing {
+  background: #fff2df;
+  color: #8b4d0c;
+}
+
+.keywordList .recommended {
+  background: #eef3f7;
+  color: #263b48;
+}
+
+.experienceResult {
+  display: grid;
+  gap: 8px;
+}
+
+.coverLetter {
+  white-space: pre-wrap;
+  overflow: auto;
+  margin: 0;
+  color: #38443f;
+  font-family: inherit;
+  line-height: 1.58;
+}
+
+.comparisonPanel {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  overflow: hidden;
+}
+
+.comparisonPanel > div {
+  padding: 20px;
+}
+
+.comparisonPanel > div + div {
+  border-left: 1px solid var(--line);
+  background: #f8fbf9;
+}
+
+@media (max-width: 900px) {
+  .tailorHeroGrid,
+  .tailorInputs,
+  .resultsGrid,
+  .comparisonPanel,
+  .scoreModule {
+    grid-template-columns: 1fr;
+  }
+
+  .scoreModule {
+    justify-items: start;
+  }
+
+  .comparisonPanel > div + div {
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .tailorHero,
+  .tailorWorkspace {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .tailorNav,
+  .cardHeader {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .largeTextarea {
+    min-height: 230px;
   }
 }
