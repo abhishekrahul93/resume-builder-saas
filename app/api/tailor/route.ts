@@ -189,7 +189,14 @@ function normalizeResult(value: Partial<TailorResult>, version: CvVersion): Tail
 }
 
 export async function POST(request: Request) {
-  const payload = (await request.json()) as TailorRequest;
+  let payload: TailorRequest;
+
+  try {
+    payload = (await request.json()) as TailorRequest;
+  } catch {
+    return NextResponse.json({ error: "Invalid request. Please refresh and try again." }, { status: 400 });
+  }
+
   const jobDescription = payload.jobDescription?.trim() || "";
   const oldCv = payload.oldCv?.trim() || "";
   const version = { ...defaultVersion, ...(payload.version || {}) };
@@ -198,110 +205,114 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please add a meaningful job description and old CV before generating." }, { status: 400 });
   }
 
-  const openAIKey = getOpenAIKey();
-  if (!openAIKey) {
-    return NextResponse.json(
-      {
-        error: "OPENAI_API_KEY is missing. Add it in .env.local locally and in Vercel environment variables for production.",
-        fallback: fallbackTailor({ ...payload, version })
-      },
-      { status: 503 }
-    );
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 25000);
-
-  const response = await fetch("https://api.openai.com/v1/responses", {
-    method: "POST",
-    signal: controller.signal,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${openAIKey}`
-    },
-    body: JSON.stringify({
-      model: "gpt-4.1-nano",
-      max_output_tokens: 1500,
-      input: [
-        {
-          role: "system",
-          content:
-            "You are a world-class multilingual resume writer, ATS optimization expert, European CV specialist, German Lebenslauf expert, and career coach.\n\nYou must generate a CV tailored to:\n- Job description\n- Candidate's existing CV\n- Selected language\n- Selected CV format\n- Target country\n- Selected tone\n\nNever invent facts. Translate and localize professionally. Use correct CV conventions for the target country. For German CVs, use professional German business language. For European CVs, use clear formal European CV style. Keep ATS compatibility unless the user selects a creative format.\n\nReturn only valid JSON matching the required schema."
-        },
-        {
-          role: "user",
-          content: JSON.stringify({
-            requiredJsonShape: {
-              version,
-              localizedHeadings: {
-                summary: "string",
-                skills: "string",
-                experience: "string",
-                education: "string",
-                projects: "string",
-                certifications: "string",
-                languages: "string"
-              },
-              atsScore: "number",
-              marketFitScore: "number",
-              professionalSummary: "string",
-              skills: { matched: ["string"], missing: ["string"], recommended: ["string"] },
-              experience: [{ role: "string", company: "string", rewrittenBullets: ["string"] }],
-              projects: ["string"],
-              educationSuggestions: ["string"],
-              certificationSuggestions: ["string"],
-              languageSuggestions: ["string"],
-              countrySpecificTips: ["string"],
-              coverLetter: "string",
-              improvementTips: ["string"],
-              agentSuggestions: ["string"]
-            },
-            mode: payload.mode || "ATS-friendly",
-            version,
-            jobDescription: limitText(jobDescription, 6500),
-            oldCv: limitText(oldCv, 8500),
-            constraints: [
-              "Do not invent fake companies, degrees, dates, or experience.",
-              "If information is missing, place it in suggestions, not in the CV content.",
-              "For German CVs use headings Profil, Berufserfahrung, Ausbildung, Fähigkeiten, Projekte, Zertifizierungen, Sprachen.",
-              "Mention photo, date of birth, and nationality only as optional German cultural suggestions."
-            ]
-          })
-        }
-      ]
-    })
-  }).catch((error) => {
-    if (error instanceof Error && error.name === "AbortError") {
-      return null;
-    }
-    throw error;
-  });
-
-  clearTimeout(timeout);
-
-  if (!response) {
-    return NextResponse.json({
-      ...fallbackTailor({ ...payload, version }),
-      warning: "AI generation took too long, so a fast ATS analysis was generated. Try again for a deeper AI rewrite."
-    });
-  }
-
-  if (!response.ok) {
-    return NextResponse.json({
-      ...fallbackTailor({ ...payload, version }),
-      warning: "AI generation failed, so a fast ATS analysis was generated. Please try again for a deeper AI rewrite."
-    });
-  }
-
-  const data = await response.json();
-  const content = extractResponseText(data);
-
   try {
-    return NextResponse.json(normalizeResult(parseJsonText(content || ""), version));
+    const openAIKey = getOpenAIKey();
+    if (!openAIKey) {
+      return NextResponse.json({
+        ...fallbackTailor({ ...payload, version }),
+        warning: "OPENAI_API_KEY is missing. A fast ATS analysis was generated instead."
+      });
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+
+    const response = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${openAIKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-4.1-nano",
+        max_output_tokens: 1500,
+        input: [
+          {
+            role: "system",
+            content:
+              "You are a world-class multilingual resume writer, ATS optimization expert, European CV specialist, German Lebenslauf expert, and career coach.\n\nYou must generate a CV tailored to:\n- Job description\n- Candidate's existing CV\n- Selected language\n- Selected CV format\n- Target country\n- Selected tone\n\nNever invent facts. Translate and localize professionally. Use correct CV conventions for the target country. For German CVs, use professional German business language. For European CVs, use clear formal European CV style. Keep ATS compatibility unless the user selects a creative format.\n\nReturn only valid JSON matching the required schema."
+          },
+          {
+            role: "user",
+            content: JSON.stringify({
+              requiredJsonShape: {
+                version,
+                localizedHeadings: {
+                  summary: "string",
+                  skills: "string",
+                  experience: "string",
+                  education: "string",
+                  projects: "string",
+                  certifications: "string",
+                  languages: "string"
+                },
+                atsScore: "number",
+                marketFitScore: "number",
+                professionalSummary: "string",
+                skills: { matched: ["string"], missing: ["string"], recommended: ["string"] },
+                experience: [{ role: "string", company: "string", rewrittenBullets: ["string"] }],
+                projects: ["string"],
+                educationSuggestions: ["string"],
+                certificationSuggestions: ["string"],
+                languageSuggestions: ["string"],
+                countrySpecificTips: ["string"],
+                coverLetter: "string",
+                improvementTips: ["string"],
+                agentSuggestions: ["string"]
+              },
+              mode: payload.mode || "ATS-friendly",
+              version,
+              jobDescription: limitText(jobDescription, 6500),
+              oldCv: limitText(oldCv, 8500),
+              constraints: [
+                "Do not invent fake companies, degrees, dates, or experience.",
+                "If information is missing, place it in suggestions, not in the CV content.",
+                "For German CVs use headings Profil, Berufserfahrung, Ausbildung, Fähigkeiten, Projekte, Zertifizierungen, Sprachen.",
+                "Mention photo, date of birth, and nationality only as optional German cultural suggestions."
+              ]
+            })
+          }
+        ]
+      })
+    }).catch((error) => {
+      if (error instanceof Error && error.name === "AbortError") {
+        return null;
+      }
+      throw error;
+    });
+
+    clearTimeout(timeout);
+
+    if (!response) {
+      return NextResponse.json({
+        ...fallbackTailor({ ...payload, version }),
+        warning: "AI generation took too long, so a fast ATS analysis was generated. Try again for a deeper AI rewrite."
+      });
+    }
+
+    if (!response.ok) {
+      return NextResponse.json({
+        ...fallbackTailor({ ...payload, version }),
+        warning: "AI generation failed, so a fast ATS analysis was generated. Please try again for a deeper AI rewrite."
+      });
+    }
+
+    const data = await response.json();
+    const content = extractResponseText(data);
+
+    try {
+      return NextResponse.json(normalizeResult(parseJsonText(content || ""), version));
+    } catch {
+      return NextResponse.json({
+        ...fallbackTailor({ ...payload, version }),
+        warning: "AI response could not be parsed, so a fast ATS analysis was generated. Please try again for a deeper AI rewrite."
+      });
+    }
   } catch {
     return NextResponse.json({
       ...fallbackTailor({ ...payload, version }),
-      warning: "AI response could not be parsed, so a fast ATS analysis was generated. Please try again for a deeper AI rewrite."
+      warning: "Generation failed safely, so a fast ATS analysis was generated. Please try again for a deeper AI rewrite."
     });
   }
 }
