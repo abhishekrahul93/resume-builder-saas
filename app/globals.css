@@ -130,6 +130,50 @@ h1 {
   font-weight: 800;
 }
 
+.uploadPanel {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f7faf8;
+}
+
+.uploadPanel h2 {
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+}
+
+.uploadPanel p {
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.fileButton {
+  display: grid;
+  place-items: center;
+  min-height: 42px;
+  margin: 0;
+  border: 1px dashed var(--accent);
+  border-radius: 8px;
+  background: white;
+  color: var(--accent-strong);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.fileButton input {
+  display: none;
+}
+
+.importMessage {
+  color: var(--accent-strong) !important;
+  font-weight: 800;
+}
+
 .controlGroup {
   padding: 20px 0;
   border-top: 1px solid var(--line);

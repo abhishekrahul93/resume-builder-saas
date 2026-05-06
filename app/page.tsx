@@ -60,6 +60,8 @@ export default function Home() {
   const [resume, setResume] = useState(initialResume);
   const [template, setTemplate] = useState<Template>("modern");
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importMessage, setImportMessage] = useState("");
 
   const contact = [resume.location, resume.email, resume.phone, resume.links].filter(Boolean);
   const bullets = useMemo(() => listFromText(resume.experience), [resume.experience]);
@@ -97,6 +99,47 @@ export default function Home() {
     }
   }
 
+  async function importCv(file: File | undefined) {
+    if (!file) {
+      return;
+    }
+
+    setIsImporting(true);
+    setImportMessage("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/import-cv", {
+        method: "POST",
+        body: formData
+      });
+
+      const imported = await response.json();
+
+      if (!response.ok) {
+        setImportMessage(imported.error || "Could not import this CV.");
+        return;
+      }
+
+      setResume((current) => ({
+        ...current,
+        name: imported.name || current.name,
+        role: imported.role || current.role,
+        email: imported.email || current.email,
+        phone: imported.phone || current.phone,
+        links: imported.links || current.links,
+        summary: imported.summary || current.summary,
+        experience: imported.experience || current.experience,
+        skills: imported.skills || current.skills
+      }));
+      setImportMessage("CV imported. Review the fields, then enhance it.");
+    } finally {
+      setIsImporting(false);
+    }
+  }
+
   return (
     <main className="appShell">
       <aside className="builderPanel" aria-label="Resume builder controls">
@@ -116,6 +159,26 @@ export default function Home() {
             PDF
           </button>
         </div>
+
+        <section className="uploadPanel" aria-label="Import existing CV">
+          <div>
+            <h2>Import Existing CV</h2>
+            <p>Upload a DOCX or TXT resume to fill the builder automatically.</p>
+          </div>
+          <label className="fileButton">
+            {isImporting ? "Importing..." : "Upload CV"}
+            <input
+              type="file"
+              accept=".docx,.txt,.pdf"
+              disabled={isImporting}
+              onChange={(event) => {
+                void importCv(event.target.files?.[0]);
+                event.target.value = "";
+              }}
+            />
+          </label>
+          {importMessage ? <p className="importMessage">{importMessage}</p> : null}
+        </section>
 
         <section className="controlGroup">
           <h2>Profile</h2>
