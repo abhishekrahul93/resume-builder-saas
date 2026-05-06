@@ -7,6 +7,7 @@ type Template = "modern" | "classic" | "compact";
 type ResumeState = {
   name: string;
   role: string;
+  targetJob: string;
   location: string;
   email: string;
   phone: string;
@@ -15,12 +16,17 @@ type ResumeState = {
   experienceTitle: string;
   experienceDates: string;
   experience: string;
+  education: string;
+  projects: string;
+  certifications: string;
   skills: string;
 };
 
 const initialResume: ResumeState = {
   name: "Abhishek Rahul",
   role: "Data Analyst",
+  targetJob:
+    "Data Analyst role focused on dashboarding, SQL reporting, KPI analysis, and business stakeholder communication.",
   location: "Berlin, Germany",
   email: "abhishek@example.com",
   phone: "+49 152 0000 0000",
@@ -30,6 +36,9 @@ const initialResume: ResumeState = {
   experienceTitle: "Data Analytics Intern, Retail Insights Lab",
   experienceDates: "Jan 2025 - Dec 2025",
   experience: "built sales dashboard in Power BI\ncleaned customer data using SQL\nprepared weekly reports for management\nimproved reporting speed",
+  education: "B.Sc. Business Analytics, Berlin Applied Sciences University\nRelevant coursework: Statistics, SQL, Data Visualization",
+  projects: "Product Analytics Dashboard - Built an interactive Power BI dashboard to track revenue, conversion, and retention KPIs.",
+  certifications: "Google Data Analytics Certificate",
   skills: "SQL, Power BI, Excel, Python, Tableau, Data Cleaning, Dashboard Design, KPI Reporting"
 };
 
@@ -53,7 +62,22 @@ function calculateScore(resume: ResumeState) {
   score += listFromText(resume.skills).length >= 6 ? 11 : 5;
   score += resume.email && resume.phone ? 8 : 0;
   score += /\d|%|reduced|increased|improved|automated/i.test(resume.experience) ? 10 : 0;
+  score += resume.targetJob.length > 40 ? 5 : 0;
+  score += resume.education.length > 20 ? 4 : 0;
+  score += resume.projects.length > 20 ? 4 : 0;
   return Math.min(score, 98);
+}
+
+function qualityChecks(resume: ResumeState) {
+  return [
+    { label: "Contact details", done: Boolean(resume.email && resume.phone) },
+    { label: "Target role", done: resume.role.length > 2 && resume.targetJob.length > 30 },
+    { label: "Strong summary", done: resume.summary.length > 120 },
+    { label: "Achievement bullets", done: listFromText(resume.experience).length >= 3 },
+    { label: "Measurable impact", done: /\d|%|reduced|increased|improved|automated|faster/i.test(resume.experience) },
+    { label: "Skills density", done: listFromText(resume.skills).length >= 6 },
+    { label: "Education", done: resume.education.length > 20 }
+  ];
 }
 
 export default function Home() {
@@ -65,7 +89,11 @@ export default function Home() {
 
   const contact = [resume.location, resume.email, resume.phone, resume.links].filter(Boolean);
   const bullets = useMemo(() => listFromText(resume.experience), [resume.experience]);
+  const education = useMemo(() => listFromText(resume.education), [resume.education]);
+  const projects = useMemo(() => listFromText(resume.projects), [resume.projects]);
+  const certifications = useMemo(() => listFromText(resume.certifications), [resume.certifications]);
   const skills = useMemo(() => listFromText(resume.skills), [resume.skills]);
+  const checks = qualityChecks(resume);
   const score = calculateScore(resume);
 
   function updateField(field: keyof ResumeState, value: string) {
@@ -83,8 +111,8 @@ export default function Home() {
         },
         body: JSON.stringify({
           role: resume.role,
-          summary: resume.summary,
-          experience: resume.experience
+          summary: `${resume.summary}\n\nTarget job: ${resume.targetJob}`,
+          experience: `${resume.experience}\n${resume.projects}`
         })
       });
 
@@ -180,10 +208,29 @@ export default function Home() {
           {importMessage ? <p className="importMessage">{importMessage}</p> : null}
         </section>
 
+        <section className="scorePanel" aria-label="Resume quality checklist">
+          <div className="scorePanelHeader">
+            <div>
+              <p className="eyebrow">Readiness</p>
+              <h2>{score}/98</h2>
+            </div>
+            <span>{checks.filter((check) => check.done).length}/{checks.length}</span>
+          </div>
+          <div className="checkList">
+            {checks.map((check) => (
+              <div className={`checkItem ${check.done ? "done" : ""}`} key={check.label}>
+                <span aria-hidden="true">{check.done ? "✓" : ""}</span>
+                {check.label}
+              </div>
+            ))}
+          </div>
+        </section>
+
         <section className="controlGroup">
           <h2>Profile</h2>
           <Field label="Full name" value={resume.name} onChange={(value) => updateField("name", value)} />
           <Field label="Target role" value={resume.role} onChange={(value) => updateField("role", value)} />
+          <TextArea label="Target job description" rows={4} value={resume.targetJob} onChange={(value) => updateField("targetJob", value)} />
           <Field label="Location" value={resume.location} onChange={(value) => updateField("location", value)} />
           <Field label="Email" value={resume.email} onChange={(value) => updateField("email", value)} />
           <Field label="Phone" value={resume.phone} onChange={(value) => updateField("phone", value)} />
@@ -205,6 +252,17 @@ export default function Home() {
         <section className="controlGroup">
           <h2>Skills</h2>
           <TextArea label="Skills" rows={4} value={resume.skills} onChange={(value) => updateField("skills", value)} />
+        </section>
+
+        <section className="controlGroup">
+          <h2>Education</h2>
+          <TextArea label="Education" rows={4} value={resume.education} onChange={(value) => updateField("education", value)} />
+        </section>
+
+        <section className="controlGroup">
+          <h2>Projects & Certifications</h2>
+          <TextArea label="Projects" rows={4} value={resume.projects} onChange={(value) => updateField("projects", value)} />
+          <TextArea label="Certifications" rows={3} value={resume.certifications} onChange={(value) => updateField("certifications", value)} />
         </section>
 
         <section className="controlGroup">
@@ -275,6 +333,39 @@ export default function Home() {
               ))}
             </div>
           </section>
+
+          {projects.length ? (
+            <section>
+              <h3>Selected Projects</h3>
+              <ul>
+                {projects.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {education.length ? (
+            <section>
+              <h3>Education</h3>
+              <ul>
+                {education.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {certifications.length ? (
+            <section>
+              <h3>Certifications</h3>
+              <ul>
+                {certifications.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
         </article>
       </section>
     </main>

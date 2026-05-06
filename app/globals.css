@@ -174,6 +174,77 @@ h1 {
   font-weight: 800;
 }
 
+.scorePanel {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid #cdd8d1;
+  border-radius: 8px;
+  background: white;
+}
+
+.scorePanelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.scorePanelHeader h2 {
+  margin-bottom: 0;
+  font-size: 1.55rem;
+}
+
+.scorePanelHeader span {
+  display: grid;
+  place-items: center;
+  min-width: 48px;
+  min-height: 36px;
+  border-radius: 8px;
+  background: var(--ink);
+  color: white;
+  font-weight: 900;
+}
+
+.checkList {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.checkItem {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.checkItem span {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: #f5f7f6;
+  color: white;
+  font-size: 0.72rem;
+}
+
+.checkItem.done {
+  color: var(--ink);
+}
+
+.checkItem.done span {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
 .controlGroup {
   padding: 20px 0;
   border-top: 1px solid var(--line);
@@ -280,6 +351,12 @@ textarea:focus {
   box-shadow: var(--shadow);
 }
 
+.resume.modern {
+  background:
+    linear-gradient(90deg, rgba(31, 122, 90, 0.08) 0 18px, transparent 18px),
+    var(--paper);
+}
+
 .resumeHeader {
   display: grid;
   grid-template-columns: 1fr minmax(220px, 0.5fr);
@@ -292,6 +369,10 @@ textarea:focus {
   margin-bottom: 8px;
   font-size: 2.35rem;
   line-height: 1.04;
+}
+
+.resume strong {
+  color: #1e2b25;
 }
 
 .resumeHeader p {
@@ -393,6 +474,10 @@ textarea:focus {
   padding-top: 20px;
 }
 
+.resume.compact h2 {
+  font-size: 2rem;
+}
+
 @media (max-width: 980px) {
   .appShell {
     grid-template-columns: 1fr;
@@ -445,6 +530,10 @@ textarea:focus {
   }
 
   .resume.compact .contactList {
+    grid-template-columns: 1fr;
+  }
+
+  .checkList {
     grid-template-columns: 1fr;
   }
 }
