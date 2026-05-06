@@ -287,7 +287,8 @@ label {
 }
 
 input,
-textarea {
+textarea,
+select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -302,7 +303,8 @@ textarea {
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 3px rgba(31, 122, 90, 0.12);
 }
@@ -690,7 +692,9 @@ textarea:focus {
 .scoreModule,
 .emptyState,
 .comparisonPanel,
-.actionDeck {
+.actionDeck,
+.versionPanel,
+.agentPanel {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: white;
@@ -700,8 +704,133 @@ textarea:focus {
 .tailorCard,
 .resultCard,
 .emptyState,
-.actionDeck {
+.actionDeck,
+.versionPanel,
+.agentPanel {
   padding: 20px;
+}
+
+.versionGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.scoreActions {
+  display: grid;
+  gap: 8px;
+}
+
+.headingGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.headingGrid span {
+  display: grid;
+  gap: 3px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.headingGrid small,
+.mutedText,
+.savedVersion small {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.savedVersionList,
+.agentPanel,
+.chatBox {
+  display: grid;
+  gap: 12px;
+}
+
+.savedVersion {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 14px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 13px;
+  background: #f8fbf9;
+}
+
+.savedVersion p {
+  margin: 4px 0;
+  color: var(--muted);
+}
+
+.savedVersion div:last-child {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  justify-content: flex-end;
+}
+
+.savedVersion button,
+.chatActions button,
+.agentInput button {
+  min-height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 0 10px;
+  font-weight: 800;
+}
+
+.chatBox {
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #f8fbf9;
+}
+
+.chatMessage {
+  max-width: 88%;
+  border-radius: 8px;
+  padding: 11px 12px;
+}
+
+.chatMessage p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.chatMessage.user {
+  justify-self: end;
+  background: var(--accent);
+  color: white;
+}
+
+.chatMessage.assistant {
+  justify-self: start;
+  background: white;
+  color: var(--ink);
+  border: 1px solid var(--line);
+}
+
+.chatActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.agentInput {
+  display: grid;
+  grid-template-columns: 1fr 92px;
+  gap: 8px;
 }
 
 .cardHeader {
@@ -957,7 +1086,8 @@ textarea:focus {
   .tailorInputs,
   .resultsGrid,
   .comparisonPanel,
-  .scoreModule {
+  .scoreModule,
+  .versionGrid {
     grid-template-columns: 1fr;
   }
 
@@ -979,12 +1109,19 @@ textarea:focus {
   }
 
   .tailorNav,
-  .cardHeader {
+  .cardHeader,
+  .savedVersion {
     align-items: stretch;
     flex-direction: column;
+    grid-template-columns: 1fr;
   }
 
   .largeTextarea {
     min-height: 230px;
+  }
+
+  .agentInput,
+  .headingGrid {
+    grid-template-columns: 1fr;
   }
 }

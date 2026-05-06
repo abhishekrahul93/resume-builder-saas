@@ -1,10 +1,18 @@
 import { NextResponse } from "next/server";
 import { extractResponseText, getOpenAIKey, parseJsonText } from "@/lib/ai";
 
+type CvVersion = {
+  language: string;
+  format: string;
+  targetCountry: string;
+  tone: string;
+};
+
 type TailorRequest = {
   jobDescription: string;
   oldCv: string;
   mode?: string;
+  version?: CvVersion;
 };
 
 type TailoredExperience = {
@@ -13,8 +21,19 @@ type TailoredExperience = {
   rewrittenBullets: string[];
 };
 
-type TailorResult = {
+export type TailorResult = {
+  version: CvVersion;
+  localizedHeadings: {
+    summary: string;
+    skills: string;
+    experience: string;
+    education: string;
+    projects: string;
+    certifications: string;
+    languages: string;
+  };
   atsScore: number;
+  marketFitScore: number;
   professionalSummary: string;
   skills: {
     matched: string[];
@@ -25,25 +44,43 @@ type TailorResult = {
   projects: string[];
   educationSuggestions: string[];
   certificationSuggestions: string[];
+  languageSuggestions: string[];
+  countrySpecificTips: string[];
   coverLetter: string;
   improvementTips: string[];
+  agentSuggestions: string[];
 };
 
-const emptyResult: TailorResult = {
-  atsScore: 0,
-  professionalSummary: "",
-  skills: {
-    matched: [],
-    missing: [],
-    recommended: []
-  },
-  experience: [],
-  projects: [],
-  educationSuggestions: [],
-  certificationSuggestions: [],
-  coverLetter: "",
-  improvementTips: []
+const defaultVersion: CvVersion = {
+  language: "English",
+  format: "Global ATS Resume",
+  targetCountry: "United States",
+  tone: "Professional"
 };
+
+const englishHeadings = {
+  summary: "Professional Summary",
+  skills: "Skills",
+  experience: "Work Experience",
+  education: "Education",
+  projects: "Projects",
+  certifications: "Certifications",
+  languages: "Languages"
+};
+
+const germanHeadings = {
+  summary: "Profil",
+  skills: "Fähigkeiten",
+  experience: "Berufserfahrung",
+  education: "Ausbildung",
+  projects: "Projekte",
+  certifications: "Zertifizierungen",
+  languages: "Sprachen"
+};
+
+function headingsFor(version: CvVersion) {
+  return version.language === "German" || version.format === "German Lebenslauf" ? germanHeadings : englishHeadings;
+}
 
 function uniqueWords(text: string) {
   return Array.from(
@@ -57,23 +94,31 @@ function uniqueWords(text: string) {
   );
 }
 
-function fallbackTailor({ jobDescription, oldCv }: TailorRequest): TailorResult {
+function fallbackTailor({ jobDescription, oldCv, version = defaultVersion }: TailorRequest): TailorResult {
   const jobWords = uniqueWords(jobDescription);
   const cvWords = new Set(uniqueWords(oldCv));
   const matched = jobWords.filter((word) => cvWords.has(word)).slice(0, 18);
   const missing = jobWords.filter((word) => !cvWords.has(word)).slice(0, 18);
+  const isGerman = version.language === "German" || version.format === "German Lebenslauf";
   const bullets = oldCv
     .split(/\n|•|-/)
     .map((line) => line.trim())
     .filter((line) => line.length > 18)
     .slice(0, 5)
-    .map((line) => `Strengthened ${line.replace(/\.$/, "")} with clearer business impact and job-relevant language.`);
+    .map((line) =>
+      isGerman
+        ? `Optimierte Darstellung: ${line.replace(/\.$/, "")} mit klarerem Bezug zur Zielposition.`
+        : `Strengthened ${line.replace(/\.$/, "")} with clearer business impact and job-relevant language.`
+    );
 
   return {
-    ...emptyResult,
+    version,
+    localizedHeadings: headingsFor(version),
     atsScore: Math.min(92, Math.max(35, Math.round((matched.length / Math.max(jobWords.length, 1)) * 100))),
-    professionalSummary:
-      "Candidate profile aligned to the target role with emphasis on relevant experience, measurable outcomes, and ATS-friendly keywords. Add specific metrics where you can verify them.",
+    marketFitScore: version.targetCountry ? 72 : 58,
+    professionalSummary: isGerman
+      ? "Formales Profil mit Fokus auf relevante Erfahrung, nachweisbare Ergebnisse und passende Schlüsselbegriffe. Ergänzen Sie konkrete Kennzahlen nur, wenn diese belegbar sind."
+      : "Candidate profile aligned to the target role with emphasis on relevant experience, measurable outcomes, and ATS-friendly keywords. Add specific metrics where you can verify them.",
     skills: {
       matched,
       missing,
@@ -81,39 +126,57 @@ function fallbackTailor({ jobDescription, oldCv }: TailorRequest): TailorResult 
     },
     experience: [
       {
-        role: "Imported CV experience",
-        company: "Existing employer",
-        rewrittenBullets: bullets.length ? bullets : ["Rewrite existing responsibilities into concise, achievement-led bullets based on verified experience."]
+        role: isGerman ? "Importierte Berufserfahrung" : "Imported CV experience",
+        company: "",
+        rewrittenBullets: bullets.length ? bullets : [isGerman ? "Formulieren Sie vorhandene Aufgaben als belegbare Erfolge." : "Rewrite existing responsibilities into concise, achievement-led bullets based on verified experience."]
       }
     ],
-    projects: ["Add one relevant project that proves the target job skills, using only work you actually completed."],
-    certificationSuggestions: missing.slice(0, 3).map((keyword) => `Consider a certification or course related to ${keyword} if it is relevant to your goals.`),
-    coverLetter:
-      "Dear Hiring Manager,\n\nI am excited to apply for this role. My background aligns with the position through relevant experience, transferable skills, and a strong focus on measurable outcomes. I would welcome the opportunity to discuss how I can contribute to your team.\n\nSincerely,"
+    projects: [isGerman ? "Fügen Sie ein relevantes Projekt hinzu, das vorhandene Erfahrung für die Zielrolle belegt." : "Add one relevant project that proves the target job skills, using only work you actually completed."],
+    educationSuggestions: [],
+    certificationSuggestions: missing.slice(0, 3).map((keyword) => isGerman ? `Optional: Weiterbildung zu ${keyword}, falls relevant.` : `Consider a certification or course related to ${keyword} if relevant.`),
+    languageSuggestions: isGerman ? ["Sprachniveaus nach CEFR angeben, z. B. Deutsch B2, Englisch C1."] : ["Add language proficiency levels if relevant to the target market."],
+    countrySpecificTips: isGerman
+      ? ["Foto, Geburtsdatum und Nationalität sind in Deutschland kulturell optional. Nicht hinzufügen, wenn Sie diese Angaben nicht teilen möchten."]
+      : ["Keep formatting simple, ATS-readable, and targeted to the country convention."],
+    coverLetter: isGerman
+      ? "Sehr geehrte Damen und Herren,\n\nmit großem Interesse bewerbe ich mich auf die ausgeschriebene Position. Meine bisherige Erfahrung passt gut zu den Anforderungen der Rolle, insbesondere durch relevante Fähigkeiten, strukturierte Arbeitsweise und nachweisbare Ergebnisse.\n\nMit freundlichen Grüßen"
+      : "Dear Hiring Manager,\n\nI am excited to apply for this role. My background aligns with the position through relevant experience, transferable skills, and a strong focus on measurable outcomes.\n\nSincerely,",
+    improvementTips: isGerman ? ["Kennzahlen ergänzen, sofern belegbar.", "Relevante Begriffe aus der Stellenanzeige natürlich einbauen."] : ["Add verified metrics where possible.", "Mirror important job-description keywords naturally."],
+    agentSuggestions: isGerman ? ["Lebenslauf formeller machen", "Berufserfahrung kürzen", "Deutschland-Fit prüfen"] : ["Improve summary", "Rewrite bullets", "Boost ATS score"]
   };
 }
 
-function normalizeResult(value: Partial<TailorResult>): TailorResult {
+function asStrings(value: unknown) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function normalizeResult(value: Partial<TailorResult>, version: CvVersion): TailorResult {
   return {
+    version: value.version || version,
+    localizedHeadings: value.localizedHeadings || headingsFor(version),
     atsScore: Math.max(0, Math.min(100, Number(value.atsScore || 0))),
+    marketFitScore: Math.max(0, Math.min(100, Number(value.marketFitScore || 0))),
     professionalSummary: value.professionalSummary || "",
     skills: {
-      matched: Array.isArray(value.skills?.matched) ? value.skills.matched : [],
-      missing: Array.isArray(value.skills?.missing) ? value.skills.missing : [],
-      recommended: Array.isArray(value.skills?.recommended) ? value.skills.recommended : []
+      matched: asStrings(value.skills?.matched),
+      missing: asStrings(value.skills?.missing),
+      recommended: asStrings(value.skills?.recommended)
     },
     experience: Array.isArray(value.experience)
       ? value.experience.map((item) => ({
           role: item.role || "",
           company: item.company || "",
-          rewrittenBullets: Array.isArray(item.rewrittenBullets) ? item.rewrittenBullets : []
+          rewrittenBullets: asStrings(item.rewrittenBullets)
         }))
       : [],
-    projects: Array.isArray(value.projects) ? value.projects : [],
-    educationSuggestions: Array.isArray(value.educationSuggestions) ? value.educationSuggestions : [],
-    certificationSuggestions: Array.isArray(value.certificationSuggestions) ? value.certificationSuggestions : [],
+    projects: asStrings(value.projects),
+    educationSuggestions: asStrings(value.educationSuggestions),
+    certificationSuggestions: asStrings(value.certificationSuggestions),
+    languageSuggestions: asStrings(value.languageSuggestions),
+    countrySpecificTips: asStrings(value.countrySpecificTips),
     coverLetter: value.coverLetter || "",
-    improvementTips: Array.isArray(value.improvementTips) ? value.improvementTips : []
+    improvementTips: asStrings(value.improvementTips),
+    agentSuggestions: asStrings(value.agentSuggestions)
   };
 }
 
@@ -121,6 +184,7 @@ export async function POST(request: Request) {
   const payload = (await request.json()) as TailorRequest;
   const jobDescription = payload.jobDescription?.trim() || "";
   const oldCv = payload.oldCv?.trim() || "";
+  const version = { ...defaultVersion, ...(payload.version || {}) };
 
   if (jobDescription.length < 80 || oldCv.length < 80) {
     return NextResponse.json({ error: "Please add a meaningful job description and old CV before generating." }, { status: 400 });
@@ -131,7 +195,7 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "OPENAI_API_KEY is missing. Add it in .env.local locally and in Vercel environment variables for production.",
-        fallback: fallbackTailor(payload)
+        fallback: fallbackTailor({ ...payload, version })
       },
       { status: 503 }
     );
@@ -149,35 +213,46 @@ export async function POST(request: Request) {
         {
           role: "system",
           content:
-            "You are a world-class resume writer, ATS optimization expert, and career coach. Given the job description and the candidate's old CV, create a highly professional, ATS-friendly resume tailored to the job. Do not fabricate facts. Rewrite weak bullet points into strong achievement-based bullets. Add job-relevant keywords naturally. Identify missing keywords separately. Return only valid JSON."
+            "You are a world-class multilingual resume writer, ATS optimization expert, European CV specialist, German Lebenslauf expert, and career coach.\n\nYou must generate a CV tailored to:\n- Job description\n- Candidate's existing CV\n- Selected language\n- Selected CV format\n- Target country\n- Selected tone\n\nNever invent facts. Translate and localize professionally. Use correct CV conventions for the target country. For German CVs, use professional German business language. For European CVs, use clear formal European CV style. Keep ATS compatibility unless the user selects a creative format.\n\nReturn only valid JSON matching the required schema."
         },
         {
           role: "user",
           content: JSON.stringify({
             requiredJsonShape: {
-              atsScore: "number 0-100",
-              professionalSummary: "string",
-              skills: {
-                matched: ["string"],
-                missing: ["string"],
-                recommended: ["string"]
+              version,
+              localizedHeadings: {
+                summary: "string",
+                skills: "string",
+                experience: "string",
+                education: "string",
+                projects: "string",
+                certifications: "string",
+                languages: "string"
               },
-              experience: [
-                {
-                  role: "string from candidate CV, blank if unclear",
-                  company: "string from candidate CV, blank if unclear",
-                  rewrittenBullets: ["string"]
-                }
-              ],
-              projects: ["suggested project descriptions based only on existing CV evidence or clearly marked suggestions"],
+              atsScore: "number",
+              marketFitScore: "number",
+              professionalSummary: "string",
+              skills: { matched: ["string"], missing: ["string"], recommended: ["string"] },
+              experience: [{ role: "string", company: "string", rewrittenBullets: ["string"] }],
+              projects: ["string"],
               educationSuggestions: ["string"],
               certificationSuggestions: ["string"],
+              languageSuggestions: ["string"],
+              countrySpecificTips: ["string"],
               coverLetter: "string",
-              improvementTips: ["string"]
+              improvementTips: ["string"],
+              agentSuggestions: ["string"]
             },
             mode: payload.mode || "ATS-friendly",
+            version,
             jobDescription,
-            oldCv
+            oldCv,
+            constraints: [
+              "Do not invent fake companies, degrees, dates, or experience.",
+              "If information is missing, place it in suggestions, not in the CV content.",
+              "For German CVs use headings Profil, Berufserfahrung, Ausbildung, Fähigkeiten, Projekte, Zertifizierungen, Sprachen.",
+              "Mention photo, date of birth, and nationality only as optional German cultural suggestions."
+            ]
           })
         }
       ]
@@ -185,15 +260,15 @@ export async function POST(request: Request) {
   });
 
   if (!response.ok) {
-    return NextResponse.json({ error: "AI tailoring failed. Please try again.", fallback: fallbackTailor(payload) }, { status: 502 });
+    return NextResponse.json({ error: "AI tailoring failed. Please try again.", fallback: fallbackTailor({ ...payload, version }) }, { status: 502 });
   }
 
   const data = await response.json();
   const content = extractResponseText(data);
 
   try {
-    return NextResponse.json(normalizeResult(parseJsonText(content || "")));
+    return NextResponse.json(normalizeResult(parseJsonText(content || ""), version));
   } catch {
-    return NextResponse.json({ error: "AI response could not be parsed. Please try again.", fallback: fallbackTailor(payload) }, { status: 502 });
+    return NextResponse.json({ error: "AI response could not be parsed. Please try again.", fallback: fallbackTailor({ ...payload, version }) }, { status: 502 });
   }
 }

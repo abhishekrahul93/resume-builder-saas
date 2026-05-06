@@ -14,9 +14,14 @@ export type ResumeState = {
   projects: string;
   certifications: string;
   skills: string;
+  versionName?: string;
+  versionLanguage?: string;
+  versionFormat?: string;
+  exportFileName?: string;
 };
 
 export const appliedResumeStorageKey = "careerforge.appliedResume";
+export const savedVersionsStorageKey = "careerforge.savedVersions";
 
 export const initialResume: ResumeState = {
   name: "Abhishek Rahul",

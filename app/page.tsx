@@ -143,6 +143,15 @@ export default function Home() {
     }
   }
 
+  function printResume() {
+    const previousTitle = document.title;
+    document.title = resume.exportFileName || `${resume.name || "resume"}-${resume.versionLanguage || "cv"}`;
+    window.print();
+    window.setTimeout(() => {
+      document.title = previousTitle;
+    }, 250);
+  }
+
   return (
     <main className="appShell">
       <aside className="builderPanel" aria-label="Resume builder controls">
@@ -161,7 +170,7 @@ export default function Home() {
           <button className="primaryButton" type="button" onClick={enhanceResume} disabled={isEnhancing}>
             {isEnhancing ? "Enhancing..." : "Enhance CV"}
           </button>
-          <button className="iconButton" type="button" onClick={() => window.print()} aria-label="Print or save as PDF">
+          <button className="iconButton" type="button" onClick={printResume} aria-label="Print or save as PDF">
             PDF
           </button>
         </div>

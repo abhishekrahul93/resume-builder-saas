@@ -2,8 +2,15 @@
 
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
-import { useMemo, useState } from "react";
-import { appliedResumeStorageKey, type ResumeState } from "@/lib/resume";
+import { useEffect, useMemo, useState } from "react";
+import { appliedResumeStorageKey, savedVersionsStorageKey, type ResumeState } from "@/lib/resume";
+
+type CvVersion = {
+  language: string;
+  format: string;
+  targetCountry: string;
+  tone: string;
+};
 
 type TailoredExperience = {
   role: string;
@@ -12,7 +19,18 @@ type TailoredExperience = {
 };
 
 type TailorResult = {
+  version: CvVersion;
+  localizedHeadings: {
+    summary: string;
+    skills: string;
+    experience: string;
+    education: string;
+    projects: string;
+    certifications: string;
+    languages: string;
+  };
   atsScore: number;
+  marketFitScore: number;
   professionalSummary: string;
   skills: {
     matched: string[];
@@ -23,11 +41,52 @@ type TailorResult = {
   projects: string[];
   educationSuggestions: string[];
   certificationSuggestions: string[];
+  languageSuggestions: string[];
+  countrySpecificTips: string[];
   coverLetter: string;
   improvementTips: string[];
+  agentSuggestions: string[];
 };
 
+type SavedCvVersion = {
+  id: string;
+  name: string;
+  createdAt: string;
+  version: CvVersion;
+  result: TailorResult;
+  draft: Partial<ResumeState>;
+};
+
+type AgentMessage = {
+  role: "user" | "assistant";
+  content: string;
+  applyText?: string;
+};
+
+const languages = ["English", "German", "French", "Spanish", "Italian", "Dutch", "Arabic", "Hindi"];
+const formats = ["Global ATS Resume", "European CV", "German Lebenslauf", "UK CV", "US Resume", "Executive CV", "Creative CV", "Entry-Level CV"];
+const tones = ["Professional", "Modern", "Executive", "Friendly", "Concise"];
+const countries = ["Germany", "Austria", "Switzerland", "United Kingdom", "United States", "Canada", "UAE", "India", "Netherlands", "France", "Spain", "Italy"];
 const enhancerModes = ["ATS-friendly", "More concise", "More executive", "Stronger bullets", "Keyword optimized"];
+const quickActions = [
+  "Improve Summary",
+  "Rewrite Experience",
+  "Translate to German",
+  "Make European CV",
+  "Boost ATS Score",
+  "Generate Cover Letter",
+  "Suggest Keywords",
+  "Make Executive Version",
+  "Shorten to 1 Page",
+  "Improve for Germany"
+];
+
+const defaultVersion: CvVersion = {
+  language: "English",
+  format: "Global ATS Resume",
+  targetCountry: "United States",
+  tone: "Professional"
+};
 
 function joinList(items: string[]) {
   return items.filter(Boolean).join(", ");
@@ -37,6 +96,10 @@ function joinBullets(items: string[]) {
   return items.filter(Boolean).join("\n");
 }
 
+function slug(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
 function scoreLabel(score: number) {
   if (score >= 85) return "Excellent match";
   if (score >= 70) return "Strong match";
@@ -44,17 +107,90 @@ function scoreLabel(score: number) {
   return "Low match";
 }
 
+function versionName(version: CvVersion) {
+  if (version.format === "German Lebenslauf" || version.language === "German") return "German Lebenslauf Version";
+  if (version.format === "European CV") return "European CV Version";
+  if (version.format === "Executive CV") return "Executive Version";
+  if (version.format === "Entry-Level CV") return "Entry-Level Version";
+  return `${version.language} ATS Version`;
+}
+
+function exportName(version: CvVersion) {
+  if (version.format === "German Lebenslauf" || version.language === "German") return `lebenslauf-${slug(version.language)}-${slug(version.targetCountry)}.pdf`;
+  if (version.format === "European CV") return `cv-european-${slug(version.language)}.pdf`;
+  return `resume-${slug(version.language)}-${slug(version.format)}.pdf`;
+}
+
+function draftFromResult(result: TailorResult, jobDescription: string): Partial<ResumeState> {
+  return {
+    targetJob: jobDescription,
+    summary: result.professionalSummary,
+    skills: joinList(result.skills.recommended.length ? result.skills.recommended : result.skills.matched),
+    experience: joinBullets(result.experience.flatMap((item) => item.rewrittenBullets)),
+    projects: joinBullets(result.projects),
+    certifications: joinBullets(result.certificationSuggestions),
+    education: joinBullets(result.educationSuggestions),
+    versionName: versionName(result.version),
+    versionLanguage: result.version.language,
+    versionFormat: result.version.format,
+    exportFileName: exportName(result.version)
+  };
+}
+
 export default function TailorPage() {
   const [jobDescription, setJobDescription] = useState("");
   const [oldCv, setOldCv] = useState("");
+  const [version, setVersion] = useState<CvVersion>(defaultVersion);
   const [mode, setMode] = useState(enhancerModes[0]);
   const [result, setResult] = useState<TailorResult | null>(null);
+  const [savedVersions, setSavedVersions] = useState<SavedCvVersion[]>([]);
+  const [agentMessages, setAgentMessages] = useState<AgentMessage[]>([
+    {
+      role: "assistant",
+      content: "I can help improve your CV step by step. Choose a quick action or ask me what to improve first."
+    }
+  ]);
+  const [agentInput, setAgentInput] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [isAgentThinking, setIsAgentThinking] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
   const allBullets = useMemo(() => result?.experience.flatMap((item) => item.rewrittenBullets) || [], [result]);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(savedVersionsStorageKey);
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored) as SavedCvVersion[];
+      queueMicrotask(() => setSavedVersions(parsed));
+    } catch {
+      window.localStorage.removeItem(savedVersionsStorageKey);
+    }
+  }, []);
+
+  function persistVersions(next: SavedCvVersion[]) {
+    setSavedVersions(next);
+    window.localStorage.setItem(savedVersionsStorageKey, JSON.stringify(next));
+  }
+
+  function updateVersion(field: keyof CvVersion, value: string) {
+    setVersion((current) => {
+      const next = { ...current, [field]: value };
+      if (field === "language" && value === "German") {
+        next.format = "German Lebenslauf";
+        next.targetCountry = "Germany";
+        next.tone = "Professional";
+      }
+      if (field === "format" && value === "German Lebenslauf") {
+        next.language = "German";
+        next.targetCountry = "Germany";
+        next.tone = "Professional";
+      }
+      return next;
+    });
+  }
 
   async function importCv(file: File | undefined) {
     if (!file) return;
@@ -74,13 +210,13 @@ export default function TailorPage() {
       }
 
       setOldCv(imported.rawText || [imported.summary, imported.experience, imported.skills].filter(Boolean).join("\n\n"));
-      setNotice("CV imported. Paste the job description and generate a tailored version.");
+      setNotice("CV imported. Choose a CV version, paste the job description, then generate.");
     } finally {
       setIsImporting(false);
     }
   }
 
-  async function generateTailoredCv(selectedMode = mode) {
+  async function generateTailoredCv(selectedMode = mode, selectedVersion = version) {
     setError("");
     setNotice("");
 
@@ -101,14 +237,12 @@ export default function TailorPage() {
       const response = await fetch("/api/tailor", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobDescription, oldCv, mode: selectedMode })
+        body: JSON.stringify({ jobDescription, oldCv, mode: selectedMode, version: selectedVersion })
       });
       const data = await response.json();
 
       if (!response.ok) {
-        if (data.fallback) {
-          setResult(data.fallback);
-        }
+        if (data.fallback) setResult(data.fallback);
         setError(data.error || "Could not generate tailored CV content.");
         return;
       }
@@ -126,15 +260,60 @@ export default function TailorPage() {
 
   function applyAll() {
     if (!result) return;
+    applyDraft(draftFromResult(result, jobDescription));
+  }
 
-    applyDraft({
-      targetJob: jobDescription,
-      summary: result.professionalSummary,
-      skills: joinList(result.skills.recommended.length ? result.skills.recommended : result.skills.matched),
-      experience: joinBullets(allBullets),
-      projects: joinBullets(result.projects),
-      certifications: joinBullets(result.certificationSuggestions)
-    });
+  function saveCurrentVersion() {
+    if (!result) return;
+    const saved: SavedCvVersion = {
+      id: crypto.randomUUID(),
+      name: versionName(result.version),
+      createdAt: new Date().toISOString(),
+      version: result.version,
+      result,
+      draft: draftFromResult(result, jobDescription)
+    };
+    persistVersions([saved, ...savedVersions]);
+    setNotice("CV version saved locally.");
+  }
+
+  function renameVersion(id: string) {
+    const current = savedVersions.find((item) => item.id === id);
+    if (!current) return;
+    const nextName = window.prompt("Rename CV version", current.name);
+    if (!nextName?.trim()) return;
+    persistVersions(savedVersions.map((item) => (item.id === id ? { ...item, name: nextName.trim() } : item)));
+  }
+
+  function deleteVersion(id: string) {
+    persistVersions(savedVersions.filter((item) => item.id !== id));
+  }
+
+  async function askAgent(action?: string) {
+    const message = action || agentInput.trim();
+    if (!message) {
+      setError("Ask the AI Career Agent a question or choose a quick action.");
+      return;
+    }
+
+    setError("");
+    setAgentInput("");
+    const nextMessages: AgentMessage[] = [...agentMessages, { role: "user", content: message }];
+    setAgentMessages(nextMessages);
+    setIsAgentThinking(true);
+
+    try {
+      const response = await fetch("/api/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, message, jobDescription, oldCv, version, result, history: nextMessages })
+      });
+      const data = await response.json();
+      if (!response.ok && data.error) setError(data.error);
+      setAgentMessages([...nextMessages, { role: "assistant", content: data.reply || "I could not create a suggestion. Please try again.", applyText: data.applyText }]);
+    } finally {
+      setIsAgentThinking(false);
+    }
   }
 
   return (
@@ -145,17 +324,13 @@ export default function TailorPage() {
             <span className="brandMark">CF</span>
             CareerForge
           </Link>
-          <Link href="/" className="secondaryButton">
-            Resume Builder
-          </Link>
+          <Link href="/" className="secondaryButton">Resume Builder</Link>
         </nav>
         <div className="tailorHeroGrid">
           <div>
             <p className="eyebrow">AI CV Tailor & Enhancer</p>
             <h1>Tailor your CV to any job in seconds</h1>
-            <p>
-              Paste a job description and your old CV. Our AI creates an ATS-optimized, recruiter-ready resume.
-            </p>
+            <p>Paste a job description and your old CV. Our AI creates an ATS-optimized, recruiter-ready resume.</p>
           </div>
           <div className="tailorHeroCard">
             <span>{result ? result.atsScore : "--"}</span>
@@ -165,166 +340,116 @@ export default function TailorPage() {
       </section>
 
       <section className="tailorWorkspace">
+        <div className="versionPanel">
+          <div className="cardHeader">
+            <div>
+              <p className="eyebrow">Choose CV Version</p>
+              <h2>Localize your CV for the job market</h2>
+            </div>
+            <span className="countBadge">{version.language} · {version.format}</span>
+          </div>
+          <div className="versionGrid">
+            <SelectField label="Target language" value={version.language} options={languages} onChange={(value) => updateVersion("language", value)} />
+            <SelectField label="CV format" value={version.format} options={formats} onChange={(value) => updateVersion("format", value)} />
+            <SelectField label="Tone" value={version.tone} options={tones} onChange={(value) => updateVersion("tone", value)} />
+            <SelectField label="Target country" value={version.targetCountry} options={countries} onChange={(value) => updateVersion("targetCountry", value)} />
+          </div>
+        </div>
+
         <div className="tailorInputs">
           <div className="tailorCard">
             <div className="cardHeader">
-              <div>
-                <p className="eyebrow">Step 1</p>
-                <h2>Job Description</h2>
-              </div>
+              <div><p className="eyebrow">Step 1</p><h2>Job Description</h2></div>
               <span className="countBadge">{jobDescription.trim().length} chars</span>
             </div>
-            <textarea
-              className="largeTextarea"
-              value={jobDescription}
-              onChange={(event) => setJobDescription(event.target.value)}
-              placeholder="Paste the full job description here, including responsibilities, required skills, tools, and qualifications."
-              rows={12}
-            />
+            <textarea className="largeTextarea" value={jobDescription} onChange={(event) => setJobDescription(event.target.value)} placeholder="Paste the full job description here, including responsibilities, required skills, tools, and qualifications." rows={12} />
           </div>
 
           <div className="tailorCard">
             <div className="cardHeader">
-              <div>
-                <p className="eyebrow">Step 2</p>
-                <h2>Old CV</h2>
-              </div>
+              <div><p className="eyebrow">Step 2</p><h2>Old CV</h2></div>
               <label className="miniUpload">
                 {isImporting ? "Importing..." : "Upload CV"}
-                <input
-                  type="file"
-                  accept=".pdf,.docx,.txt"
-                  disabled={isImporting}
-                  onChange={(event) => {
-                    void importCv(event.target.files?.[0]);
-                    event.target.value = "";
-                  }}
-                />
+                <input type="file" accept=".pdf,.docx,.txt" disabled={isImporting} onChange={(event) => { void importCv(event.target.files?.[0]); event.target.value = ""; }} />
               </label>
             </div>
-            <textarea
-              className="largeTextarea"
-              value={oldCv}
-              onChange={(event) => setOldCv(event.target.value)}
-              placeholder="Paste your existing CV here, or upload a PDF, DOCX, or TXT file."
-              rows={12}
-            />
+            <textarea className="largeTextarea" value={oldCv} onChange={(event) => setOldCv(event.target.value)} placeholder="Paste your existing CV here, or upload a PDF, DOCX, or TXT file." rows={12} />
           </div>
         </div>
 
         <div className="actionDeck">
           <div className="modeGrid">
             {enhancerModes.map((item) => (
-              <button className={`modeButton ${mode === item ? "active" : ""}`} key={item} type="button" onClick={() => setMode(item)}>
-                {item}
-              </button>
+              <button className={`modeButton ${mode === item ? "active" : ""}`} key={item} type="button" onClick={() => setMode(item)}>{item}</button>
             ))}
           </div>
-          <button className="generateButton" type="button" onClick={() => void generateTailoredCv()} disabled={isGenerating}>
-            {isGenerating ? "Generating tailored CV..." : "Generate Tailored CV"}
-          </button>
+          <button className="generateButton" type="button" onClick={() => void generateTailoredCv()} disabled={isGenerating}>{isGenerating ? "Generating tailored CV..." : "Generate Tailored CV"}</button>
           <div className="quickImprove">
-            {enhancerModes.slice(1).map((item) => (
-              <button key={item} type="button" onClick={() => void generateTailoredCv(item)} disabled={isGenerating}>
-                {item}
-              </button>
+            {["German Lebenslauf", "European CV", "Executive CV", "Entry-Level CV"].map((format) => (
+              <button key={format} type="button" onClick={() => { const next = { ...version, format, language: format === "German Lebenslauf" ? "German" : version.language, targetCountry: format === "German Lebenslauf" ? "Germany" : version.targetCountry }; setVersion(next); void generateTailoredCv(format, next); }} disabled={isGenerating}>Create {format}</button>
             ))}
           </div>
           {error ? <p className="errorBox">{error}</p> : null}
           {notice ? <p className="noticeBox">{notice}</p> : null}
         </div>
 
+        <SavedVersions versions={savedVersions} onApply={(item) => applyDraft(item.draft)} onPreview={(item) => setResult(item.result)} onRename={renameVersion} onDelete={deleteVersion} />
+
+        <CareerAgent messages={agentMessages} input={agentInput} setInput={setAgentInput} isLoading={isAgentThinking} onAsk={askAgent} onApply={(text) => applyDraft({ summary: text })} />
+
         {!result ? (
-          <div className="emptyState">
-            <h2>Your tailored CV analysis will appear here</h2>
-            <p>Generate once to see ATS scoring, keyword gaps, rewritten bullets, project ideas, and a cover letter draft.</p>
-          </div>
+          <div className="emptyState"><h2>Your tailored CV analysis will appear here</h2><p>Generate once to see ATS scoring, market fit, localized headings, keyword gaps, rewritten bullets, project ideas, and a cover letter draft.</p></div>
         ) : (
           <section className="resultsGrid" aria-label="Tailored CV results">
             <div className="scoreModule">
-              <div className="scoreRing" style={{ "--score": `${result.atsScore}%` } as CSSProperties}>
-                <span>{result.atsScore}</span>
-              </div>
+              <div className="scoreRing" style={{ "--score": `${result.atsScore}%` } as CSSProperties}><span>{result.atsScore}</span></div>
               <div>
                 <p className="eyebrow">ATS score</p>
                 <h2>{scoreLabel(result.atsScore)}</h2>
-                <p>Score is based on CV and job-description keyword overlap plus role alignment. Review missing terms before applying.</p>
+                <p>Market fit: <strong>{result.marketFitScore}/100</strong>. Version: {result.version.language}, {result.version.format}, {result.version.targetCountry}.</p>
               </div>
-              <button className="primaryButton" type="button" onClick={applyAll}>
-                Apply Full Tailored CV
-              </button>
+              <div className="scoreActions">
+                <button className="primaryButton" type="button" onClick={applyAll}>Apply Full Tailored CV</button>
+                <button className="secondaryButton" type="button" onClick={saveCurrentVersion}>Save Version</button>
+              </div>
             </div>
 
-            <ResultCard title="Professional Summary" actionLabel="Apply Summary" onApply={() => applyDraft({ summary: result.professionalSummary })}>
-              <p>{result.professionalSummary}</p>
+            <ResultCard title="Localized Headings">
+              <div className="headingGrid">
+                {Object.entries(result.localizedHeadings).map(([key, value]) => <span key={key}><small>{key}</small>{value}</span>)}
+              </div>
             </ResultCard>
+
+            <ResultCard title={result.localizedHeadings.summary} actionLabel="Apply Summary" onApply={() => applyDraft({ summary: result.professionalSummary })}><p>{result.professionalSummary}</p></ResultCard>
 
             <ResultCard title="Keyword Analysis">
               <KeywordBlock title="Matched" items={result.skills.matched} tone="matched" />
               <KeywordBlock title="Missing" items={result.skills.missing} tone="missing" />
               <KeywordBlock title="Recommended Skills" items={result.skills.recommended} tone="recommended" />
-              <button className="secondaryButton" type="button" onClick={() => applyDraft({ skills: joinList(result.skills.recommended) })}>
-                Apply Skills
-              </button>
+              <button className="secondaryButton" type="button" onClick={() => applyDraft({ skills: joinList(result.skills.recommended) })}>Apply Skills</button>
             </ResultCard>
 
-            <ResultCard title="Rewritten Work Experience" actionLabel="Apply Bullets" onApply={() => applyDraft({ experience: joinBullets(allBullets) })}>
-              {result.experience.map((item, index) => (
-                <div className="experienceResult" key={`${item.role}-${index}`}>
-                  <strong>{[item.role, item.company].filter(Boolean).join(" - ") || "Experience"}</strong>
-                  <ul>
-                    {item.rewrittenBullets.map((bullet) => (
-                      <li key={bullet}>{bullet}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+            <ResultCard title={result.localizedHeadings.experience} actionLabel="Apply Bullets" onApply={() => applyDraft({ experience: joinBullets(allBullets) })}>
+              {result.experience.map((item, index) => <div className="experienceResult" key={`${item.role}-${index}`}><strong>{[item.role, item.company].filter(Boolean).join(" - ") || "Experience"}</strong><ul>{item.rewrittenBullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul></div>)}
             </ResultCard>
 
-            <ResultCard title="Suggested Projects" actionLabel="Apply Projects" onApply={() => applyDraft({ projects: joinBullets(result.projects) })}>
-              <ul>
-                {result.projects.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
+            <ResultCard title="Country & Market Tips">
+              <KeywordBlock title="Country-specific tips" items={result.countrySpecificTips} tone="recommended" />
+              <KeywordBlock title="Language suggestions" items={result.languageSuggestions} tone="recommended" />
+              <KeywordBlock title="Agent suggestions" items={result.agentSuggestions} tone="matched" />
             </ResultCard>
 
-            <ResultCard
-              title="Education & Certifications"
-              actionLabel="Apply Certifications"
-              onApply={() => applyDraft({ certifications: joinBullets(result.certificationSuggestions) })}
-            >
+            <ResultCard title={result.localizedHeadings.projects} actionLabel="Apply Projects" onApply={() => applyDraft({ projects: joinBullets(result.projects) })}><ul>{result.projects.map((item) => <li key={item}>{item}</li>)}</ul></ResultCard>
+
+            <ResultCard title={`${result.localizedHeadings.education} & ${result.localizedHeadings.certifications}`} actionLabel="Apply Certifications" onApply={() => applyDraft({ certifications: joinBullets(result.certificationSuggestions), education: joinBullets(result.educationSuggestions) })}>
               <KeywordBlock title="Education Suggestions" items={result.educationSuggestions} tone="recommended" />
               <KeywordBlock title="Certification Suggestions" items={result.certificationSuggestions} tone="recommended" />
             </ResultCard>
 
-            <ResultCard title="Cover Letter Draft">
-              <pre className="coverLetter">{result.coverLetter}</pre>
-            </ResultCard>
+            <ResultCard title="Cover Letter Draft"><pre className="coverLetter">{result.coverLetter}</pre></ResultCard>
+            <ResultCard title="Improvement Tips"><ul>{result.improvementTips.map((item) => <li key={item}>{item}</li>)}</ul></ResultCard>
 
-            <ResultCard title="Improvement Tips">
-              <ul>
-                {result.improvementTips.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </ResultCard>
-
-            <div className="comparisonPanel">
-              <div>
-                <p className="eyebrow">Original</p>
-                <p>{oldCv.slice(0, 900)}{oldCv.length > 900 ? "..." : ""}</p>
-              </div>
-              <div>
-                <p className="eyebrow">Enhanced</p>
-                <p>{result.professionalSummary}</p>
-                <ul>
-                  {allBullets.slice(0, 5).map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            <div className="comparisonPanel"><div><p className="eyebrow">Original</p><p>{oldCv.slice(0, 900)}{oldCv.length > 900 ? "..." : ""}</p></div><div><p className="eyebrow">Enhanced</p><p>{result.professionalSummary}</p><ul>{allBullets.slice(0, 5).map((item) => <li key={item}>{item}</li>)}</ul></div></div>
           </section>
         )}
       </section>
@@ -332,39 +457,34 @@ export default function TailorPage() {
   );
 }
 
-function ResultCard({
-  title,
-  actionLabel,
-  onApply,
-  children
-}: {
-  title: string;
-  actionLabel?: string;
-  onApply?: () => void;
-  children: ReactNode;
-}) {
+function SelectField({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
+  return <label>{label}<select value={value} onChange={(event) => onChange(event.target.value)}>{options.map((item) => <option key={item} value={item}>{item}</option>)}</select></label>;
+}
+
+function SavedVersions({ versions, onApply, onPreview, onRename, onDelete }: { versions: SavedCvVersion[]; onApply: (item: SavedCvVersion) => void; onPreview: (item: SavedCvVersion) => void; onRename: (id: string) => void; onDelete: (id: string) => void }) {
   return (
-    <article className="resultCard">
-      <div className="cardHeader">
-        <h2>{title}</h2>
-        {actionLabel && onApply ? (
-          <button className="secondaryButton" type="button" onClick={onApply}>
-            {actionLabel}
-          </button>
-        ) : null}
-      </div>
-      {children}
-    </article>
+    <section className="versionPanel">
+      <div className="cardHeader"><div><p className="eyebrow">Saved CV Versions</p><h2>Manage generated versions</h2></div><span className="countBadge">{versions.length} saved</span></div>
+      {versions.length ? <div className="savedVersionList">{versions.map((item) => <article className="savedVersion" key={item.id}><div><strong>{item.name}</strong><p>{item.version.language} · {item.version.format} · {item.version.targetCountry}</p><small>{new Date(item.createdAt).toLocaleString()}</small></div><div><button onClick={() => onPreview(item)} type="button">Preview</button><button onClick={() => onApply(item)} type="button">Apply</button><button onClick={() => onRename(item.id)} type="button">Rename</button><button onClick={() => onDelete(item.id)} type="button">Delete</button></div></article>)}</div> : <p className="mutedText">No saved versions yet. Generate a CV and click Save Version.</p>}
+    </section>
   );
 }
 
-function KeywordBlock({ title, items, tone }: { title: string; items: string[]; tone: string }) {
+function CareerAgent({ messages, input, setInput, isLoading, onAsk, onApply }: { messages: AgentMessage[]; input: string; setInput: (value: string) => void; isLoading: boolean; onAsk: (action?: string) => void; onApply: (text: string) => void }) {
   return (
-    <div className="keywordBlock">
-      <h3>{title}</h3>
-      <div className="keywordList">
-        {items.length ? items.map((item) => <span className={tone} key={item}>{item}</span>) : <small>No items yet</small>}
-      </div>
-    </div>
+    <section className="agentPanel">
+      <div className="cardHeader"><div><p className="eyebrow">AI Career Agent</p><h2>Improve your resume step by step</h2></div></div>
+      <div className="quickImprove">{quickActions.map((item) => <button key={item} type="button" onClick={() => onAsk(item)} disabled={isLoading}>{item}</button>)}</div>
+      <div className="chatBox">{messages.map((message, index) => <div className={`chatMessage ${message.role}`} key={`${message.role}-${index}`}><p>{message.content}</p>{message.role === "assistant" ? <div className="chatActions"><button type="button" onClick={() => navigator.clipboard.writeText(message.content)}>Copy</button><button type="button" onClick={() => onApply(message.applyText || message.content)}>Apply Suggestion</button></div> : null}</div>)}{isLoading ? <div className="chatMessage assistant"><p>Thinking...</p></div> : null}</div>
+      <div className="agentInput"><input value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask: Can you make this CV suitable for Germany?" onKeyDown={(event) => { if (event.key === "Enter") onAsk(); }} /><button type="button" onClick={() => onAsk()} disabled={isLoading}>Send</button></div>
+    </section>
   );
+}
+
+function ResultCard({ title, actionLabel, onApply, children }: { title: string; actionLabel?: string; onApply?: () => void; children: ReactNode }) {
+  return <article className="resultCard"><div className="cardHeader"><h2>{title}</h2>{actionLabel && onApply ? <button className="secondaryButton" type="button" onClick={onApply}>{actionLabel}</button> : null}</div>{children}</article>;
+}
+
+function KeywordBlock({ title, items, tone }: { title: string; items: string[]; tone: string }) {
+  return <div className="keywordBlock"><h3>{title}</h3><div className="keywordList">{items.length ? items.map((item) => <span className={tone} key={item}>{item}</span>) : <small>No items yet</small>}</div></div>;
 }
