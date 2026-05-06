@@ -1150,6 +1150,69 @@ select:focus {
   background: #f8fbf9;
 }
 
+.printableTailoredResume {
+  grid-column: 1 / -1;
+  width: min(100%, 920px);
+  margin: 0 auto;
+  padding: 52px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 14px 44px rgba(24, 34, 30, 0.08);
+}
+
+.printableTailoredResume header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 22px;
+  border-bottom: 3px solid var(--ink);
+}
+
+.printableTailoredResume h1 {
+  margin-bottom: 8px;
+  font-size: 2.4rem;
+  line-height: 1.04;
+}
+
+.printableTailoredResume header p,
+.printableTailoredResume header span {
+  color: var(--accent);
+  font-weight: 900;
+}
+
+.printableTailoredResume section {
+  padding-top: 24px;
+}
+
+.printableTailoredResume h2 {
+  margin-bottom: 10px;
+  color: var(--accent-strong);
+  font-size: 0.86rem;
+  text-transform: uppercase;
+}
+
+.printableTailoredResume h3 {
+  margin-bottom: 8px;
+  font-size: 1rem;
+}
+
+.printableTailoredResume p,
+.printableTailoredResume li {
+  color: #38443f;
+  line-height: 1.55;
+}
+
+.printableTailoredResume ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.printExperience + .printExperience {
+  margin-top: 16px;
+}
+
 @media (max-width: 900px) {
   .tailorHeroGrid,
   .tailorInputs,
@@ -1167,6 +1230,40 @@ select:focus {
   .comparisonPanel > div + div {
     border-top: 1px solid var(--line);
     border-left: 0;
+  }
+}
+
+@media print {
+  body:has(.tailorShell) {
+    background: white;
+  }
+
+  body:has(.tailorShell) .tailorHero,
+  body:has(.tailorShell) .versionPanel,
+  body:has(.tailorShell) .tailorInputs,
+  body:has(.tailorShell) .actionDeck,
+  body:has(.tailorShell) .agentPanel,
+  body:has(.tailorShell) .emptyState,
+  body:has(.tailorShell) .scoreModule,
+  body:has(.tailorShell) .resultCard,
+  body:has(.tailorShell) .comparisonPanel {
+    display: none !important;
+  }
+
+  body:has(.tailorShell) .tailorWorkspace,
+  body:has(.tailorShell) .resultsGrid {
+    display: block;
+    padding: 0;
+    width: 100%;
+  }
+
+  body:has(.tailorShell) .printableTailoredResume {
+    display: block !important;
+    width: 100%;
+    margin: 0;
+    padding: 34px;
+    border: 0;
+    box-shadow: none;
   }
 }
 

@@ -296,6 +296,16 @@ export default function TailorPage() {
     applyDraft(draftFromResult(result, jobDescription));
   }
 
+  function printTailoredCv() {
+    if (!result) return;
+    const previousTitle = document.title;
+    document.title = exportName(result.version).replace(/\.pdf$/i, "");
+    window.print();
+    window.setTimeout(() => {
+      document.title = previousTitle;
+    }, 250);
+  }
+
   function saveCurrentVersion() {
     if (!result) return;
     const saved: SavedCvVersion = {
@@ -463,9 +473,56 @@ export default function TailorPage() {
               </div>
               <div className="scoreActions">
                 <button className="primaryButton" type="button" onClick={applyAll}>Apply Full Tailored CV</button>
+                <button className="secondaryButton" type="button" onClick={printTailoredCv}>Export Tailored PDF</button>
                 <button className="secondaryButton" type="button" onClick={saveCurrentVersion}>Save Version</button>
               </div>
             </div>
+
+            <article className="printableTailoredResume">
+              <header>
+                <div>
+                  <h1>Abhishek Rahul</h1>
+                  <p>{result.version.format} · {result.version.targetCountry}</p>
+                </div>
+                <span>{result.version.language}</span>
+              </header>
+
+              <section>
+                <h2>{result.localizedHeadings.summary}</h2>
+                <p>{result.professionalSummary}</p>
+              </section>
+
+              <section>
+                <h2>{result.localizedHeadings.experience}</h2>
+                {result.experience.map((item, index) => (
+                  <div className="printExperience" key={`${item.role}-${index}`}>
+                    <h3>{[item.role, item.company].filter(Boolean).join(" · ") || "Experience"}</h3>
+                    <ul>
+                      {item.rewrittenBullets.map((bullet) => <li key={bullet}>{bullet}</li>)}
+                    </ul>
+                  </div>
+                ))}
+              </section>
+
+              <section>
+                <h2>{result.localizedHeadings.skills}</h2>
+                <p>{joinList(result.skills.recommended.length ? result.skills.recommended : result.skills.matched)}</p>
+              </section>
+
+              {result.projects.length ? (
+                <section>
+                  <h2>{result.localizedHeadings.projects}</h2>
+                  <ul>{result.projects.map((item) => <li key={item}>{item}</li>)}</ul>
+                </section>
+              ) : null}
+
+              {result.certificationSuggestions.length ? (
+                <section>
+                  <h2>{result.localizedHeadings.certifications}</h2>
+                  <ul>{result.certificationSuggestions.map((item) => <li key={item}>{item}</li>)}</ul>
+                </section>
+              ) : null}
+            </article>
 
             <ResultCard title="Localized Headings">
               <div className="headingGrid">
