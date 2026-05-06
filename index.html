@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CareerForge Resume Builder</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="builder-panel" aria-label="Resume builder controls">
+        <div class="brand-row">
+          <div class="brand-mark">CF</div>
+          <div>
+            <p class="eyebrow">CareerForge</p>
+            <h1>Resume Builder</h1>
+          </div>
+        </div>
+
+        <div class="toolbar" aria-label="Resume actions">
+          <button class="primary-button" id="enhanceBtn" type="button">Enhance CV</button>
+          <button class="icon-button" id="printBtn" type="button" aria-label="Print or save as PDF" title="Print or save as PDF">PDF</button>
+        </div>
+
+        <section class="control-group">
+          <h2>Profile</h2>
+          <label>
+            Full name
+            <input id="name" type="text" value="Abhishek Rahul" />
+          </label>
+          <label>
+            Target role
+            <input id="role" type="text" value="Data Analyst" />
+          </label>
+          <label>
+            Location
+            <input id="location" type="text" value="Berlin, Germany" />
+          </label>
+          <label>
+            Email
+            <input id="email" type="email" value="abhishek@example.com" />
+          </label>
+          <label>
+            Phone
+            <input id="phone" type="tel" value="+49 152 0000 0000" />
+          </label>
+          <label>
+            Links
+            <input id="links" type="text" value="linkedin.com/in/abhishek | github.com/abhishek" />
+          </label>
+        </section>
+
+        <section class="control-group">
+          <h2>Summary</h2>
+          <label>
+            Rough summary
+            <textarea id="summary" rows="5">I am a data analyst with experience in dashboards, SQL, Excel, Power BI, and business reporting. I like solving problems and finding insights.</textarea>
+          </label>
+        </section>
+
+        <section class="control-group">
+          <h2>Experience</h2>
+          <label>
+            Role and company
+            <input id="experienceTitle" type="text" value="Data Analytics Intern, Retail Insights Lab" />
+          </label>
+          <label>
+            Dates
+            <input id="experienceDates" type="text" value="Jan 2025 - Dec 2025" />
+          </label>
+          <label>
+            Rough achievements
+            <textarea id="experience" rows="7">built sales dashboard in Power BI
+cleaned customer data using SQL
+prepared weekly reports for management
+improved reporting speed</textarea>
+          </label>
+        </section>
+
+        <section class="control-group">
+          <h2>Skills</h2>
+          <label>
+            Skills
+            <textarea id="skills" rows="4">SQL, Power BI, Excel, Python, Tableau, Data Cleaning, Dashboard Design, KPI Reporting</textarea>
+          </label>
+        </section>
+
+        <section class="control-group">
+          <h2>Template</h2>
+          <div class="segmented-control" role="group" aria-label="Choose resume template">
+            <button class="template-option active" type="button" data-template="modern">Modern</button>
+            <button class="template-option" type="button" data-template="classic">Classic</button>
+            <button class="template-option" type="button" data-template="compact">Compact</button>
+          </div>
+        </section>
+      </aside>
+
+      <section class="preview-stage" aria-label="Resume preview">
+        <div class="preview-topbar">
+          <div>
+            <p class="eyebrow">Live preview</p>
+            <h2 id="previewTemplateLabel">Modern CV</h2>
+          </div>
+          <div class="score-card" aria-label="Resume strength score">
+            <span id="score">82</span>
+            <small>ATS score</small>
+          </div>
+        </div>
+
+        <article class="resume modern" id="resume">
+          <header class="resume-header">
+            <div>
+              <h2 id="outName"></h2>
+              <p id="outRole"></p>
+            </div>
+            <ul class="contact-list" id="outContact"></ul>
+          </header>
+
+          <section>
+            <h3>Professional Summary</h3>
+            <p id="outSummary"></p>
+          </section>
+
+          <section>
+            <h3>Experience</h3>
+            <div class="experience-heading">
+              <strong id="outExperienceTitle"></strong>
+              <span id="outExperienceDates"></span>
+            </div>
+            <ul id="outExperience"></ul>
+          </section>
+
+          <section>
+            <h3>Core Skills</h3>
+            <div class="skill-list" id="outSkills"></div>
+          </section>
+        </article>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>
