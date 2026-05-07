@@ -69,6 +69,18 @@ type UploadedCv = {
   text: string;
 };
 
+type CandidateProfile = {
+  name: string;
+  role: string;
+  location: string;
+  email: string;
+  phone: string;
+  links: string[];
+  workAuthorization: string;
+  education: string[];
+  certifications: string[];
+};
+
 const languages = ["English", "German", "French", "Spanish", "Italian", "Dutch", "Arabic", "Hindi"];
 const formats = ["Global ATS Resume", "European CV", "German Lebenslauf", "UK CV", "US Resume", "Executive CV", "Creative CV", "Entry-Level CV"];
 const tones = ["Professional", "Modern", "Executive", "Friendly", "Concise"];
@@ -146,14 +158,61 @@ function listHtml(items: string[]) {
   return `<ul>${cleanItems.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
 }
 
-function tailoredCvDocumentHtml(result: TailorResult) {
-  const skills = result.skills.recommended.length ? result.skills.recommended : result.skills.matched;
+function cleanText(value: string) {
+  return value.replace(/\s+/g, " ").trim();
+}
+
+function isContactLine(value: string) {
+  return /@|\+\d|linkedin|github|https?:|www\.|eligible|visa|work author/i.test(value);
+}
+
+function extractSectionLines(cv: string, headings: string[]) {
+  const stopHeadings = /^(professional summary|summary|profil|profile|professional experience|experience|berufserfahrung|work experience|portfolio projects|projects|projekte|technical skills|skills|fähigkeiten|education|ausbildung|certifications|training|languages|sprachen)$/i;
+  const lines = cv.split(/\r?\n/).map(cleanText).filter(Boolean);
+  const startIndex = lines.findIndex((line) => headings.some((heading) => line.toLowerCase().startsWith(heading.toLowerCase())));
+  if (startIndex === -1) return [];
+  const output: string[] = [];
+  const firstLine = headings.reduce((current, heading) => current.replace(new RegExp(`^${heading}\\s*`, "i"), ""), lines[startIndex]).trim();
+  if (firstLine && !stopHeadings.test(firstLine)) output.push(firstLine.replace(/^[-•]\s*/, ""));
+  for (const line of lines.slice(startIndex + 1)) {
+    if (stopHeadings.test(line) && output.length) break;
+    if (!stopHeadings.test(line)) output.push(line.replace(/^[-•]\s*/, ""));
+  }
+  return output.slice(0, 5);
+}
+
+function candidateFromCv(cv: string, result?: TailorResult | null): CandidateProfile {
+  const lines = cv.split(/\r?\n/).map(cleanText).filter(Boolean);
+  const email = cv.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i)?.[0] || "";
+  const phone = cv.match(/(?:\+\d{1,3}[\s-]?)?(?:\(?\d{2,5}\)?[\s-]?){3,}\d{2,}/)?.[0] || "";
+  const links = Array.from(new Set((cv.match(/(?:https?:\/\/)?(?:www\.)?(?:linkedin\.com|github\.com)\/[^\s|,]+/gi) || []).map((item) => item.replace(/[.,;]+$/, ""))));
+  const locationLine = cv.match(/\b[A-Z][a-zA-Z]+,\s*(?:Germany|India|United States|Canada|UAE|Netherlands|France|Spain|Italy|Austria|Switzerland|United Kingdom)\b/)?.[0] || "";
+  const workAuthorization = lines.find((line) => /eligible|visa|work author/i.test(line)) || "";
+  const name = lines.find((line) => !isContactLine(line) && line.length <= 42) || "Candidate Name";
+  const role = lines.find((line) => line !== name && !isContactLine(line) && line.length <= 88) || result?.experience[0]?.role || "Professional";
+
+  return {
+    name,
+    role,
+    location: locationLine,
+    email,
+    phone,
+    links,
+    workAuthorization,
+    education: extractSectionLines(cv, ["EDUCATION", "Ausbildung"]),
+    certifications: extractSectionLines(cv, ["CERTIFICATIONS & TRAINING", "CERTIFICATIONS", "Training", "Zertifizierungen"])
+  };
+}
+
+function tailoredCvDocumentHtml(result: TailorResult, profile: CandidateProfile) {
+  const skills = result.skills.matched.length ? result.skills.matched : result.skills.recommended;
   const experience = result.experience
     .map((item) => {
-      const title = [item.role, item.company].filter(Boolean).join(" · ") || "Experience";
+      const title = [item.role, item.company].filter(Boolean).join(" | ") || "Experience";
       return `<div class="experience"><h3>${escapeHtml(title)}</h3>${listHtml(item.rewrittenBullets)}</div>`;
     })
     .join("");
+  const contact = [profile.location, profile.email, profile.phone, ...profile.links].filter(Boolean);
 
   return `<!doctype html>
 <html>
@@ -161,21 +220,25 @@ function tailoredCvDocumentHtml(result: TailorResult) {
   <meta charset="utf-8" />
   <title>${escapeHtml(exportName(result.version).replace(/\.pdf$/i, ""))}</title>
   <style>
-    body { color: #1f2a24; font-family: Arial, Helvetica, sans-serif; line-height: 1.45; margin: 40px; }
-    header { border-bottom: 3px solid #1f2a24; margin-bottom: 22px; padding-bottom: 16px; }
-    h1 { font-size: 30px; margin: 0 0 6px; }
-    h2 { color: #145f46; font-size: 13px; letter-spacing: 0; margin: 22px 0 8px; text-transform: uppercase; }
-    h3 { font-size: 15px; margin: 14px 0 6px; }
-    p { margin: 0 0 8px; }
+    body { color: #1f2a24; font-family: Arial, Helvetica, sans-serif; font-size: 10.5pt; line-height: 1.42; margin: 34px; }
+    header { border-bottom: 2px solid #1f2a24; margin-bottom: 18px; padding-bottom: 12px; }
+    h1 { font-size: 25pt; letter-spacing: .2px; margin: 0 0 4px; }
+    h2 { border-bottom: 1px solid #cbd6d0; color: #145f46; font-size: 9.5pt; letter-spacing: .8px; margin: 17px 0 7px; padding-bottom: 3px; text-transform: uppercase; }
+    h3 { font-size: 10.5pt; margin: 12px 0 5px; }
+    p { margin: 0 0 7px; }
     ul { margin: 0; padding-left: 20px; }
-    li { margin-bottom: 5px; }
-    .meta { color: #1f7a5a; font-weight: 700; }
+    li { margin-bottom: 4px; }
+    .role { color: #145f46; font-size: 12pt; font-weight: 700; }
+    .contact { color: #46534d; font-size: 9.5pt; margin-top: 7px; }
+    .auth { color: #46534d; font-size: 9.5pt; font-weight: 700; }
   </style>
 </head>
 <body>
   <header>
-    <h1>Abhishek Rahul</h1>
-    <p class="meta">${escapeHtml(result.version.format)} · ${escapeHtml(result.version.targetCountry)} · ${escapeHtml(result.version.language)}</p>
+    <h1>${escapeHtml(profile.name)}</h1>
+    <p class="role">${escapeHtml(profile.role)}</p>
+    ${contact.length ? `<p class="contact">${escapeHtml(contact.join(" | "))}</p>` : ""}
+    ${profile.workAuthorization ? `<p class="auth">${escapeHtml(profile.workAuthorization)}</p>` : ""}
   </header>
   <section>
     <h2>${escapeHtml(result.localizedHeadings.summary)}</h2>
@@ -190,7 +253,8 @@ function tailoredCvDocumentHtml(result: TailorResult) {
     <p>${escapeHtml(joinList(skills))}</p>
   </section>
   ${result.projects.length ? `<section><h2>${escapeHtml(result.localizedHeadings.projects)}</h2>${listHtml(result.projects)}</section>` : ""}
-  ${result.certificationSuggestions.length ? `<section><h2>${escapeHtml(result.localizedHeadings.certifications)}</h2>${listHtml(result.certificationSuggestions)}</section>` : ""}
+  ${profile.education.length ? `<section><h2>${escapeHtml(result.localizedHeadings.education)}</h2>${listHtml(profile.education)}</section>` : ""}
+  ${profile.certifications.length ? `<section><h2>${escapeHtml(result.localizedHeadings.certifications)}</h2>${listHtml(profile.certifications)}</section>` : ""}
 </body>
 </html>`;
 }
@@ -235,6 +299,7 @@ export default function TailorPage() {
   const [showExportPrompt, setShowExportPrompt] = useState(false);
 
   const allBullets = useMemo(() => result?.experience.flatMap((item) => item.rewrittenBullets) || [], [result]);
+  const candidateProfile = useMemo(() => candidateFromCv(oldCv, result), [oldCv, result]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(savedVersionsStorageKey);
@@ -380,7 +445,7 @@ export default function TailorPage() {
 
   function downloadTailoredWord() {
     if (!result) return;
-    const blob = new Blob([tailoredCvDocumentHtml(result)], { type: "application/msword;charset=utf-8" });
+    const blob = new Blob([tailoredCvDocumentHtml(result, candidateProfile)], { type: "application/msword;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
@@ -579,7 +644,86 @@ export default function TailorPage() {
               </div>
             ) : null}
 
-            <article className="printableTailoredResume">
+            <article className="printableTailoredResume premiumTailoredResume">
+              <header className="resumePrintHeader">
+                <div>
+                  <h1>{candidateProfile.name}</h1>
+                  <p>{candidateProfile.role}</p>
+                </div>
+                <ul className="printContactList">
+                  {[candidateProfile.location, candidateProfile.email, candidateProfile.phone, ...candidateProfile.links].filter(Boolean).map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </header>
+
+              {candidateProfile.workAuthorization ? <p className="workAuthorization">{candidateProfile.workAuthorization}</p> : null}
+
+              <div className="printResumeMeta">
+                <span>{result.version.format}</span>
+                <span>{result.version.targetCountry}</span>
+                <span>{result.version.language}</span>
+                <span>{result.version.tone}</span>
+              </div>
+
+              <div className="printResumeBody">
+                <main>
+                  <section>
+                    <h2>{result.localizedHeadings.summary}</h2>
+                    <p>{result.professionalSummary}</p>
+                  </section>
+
+                  <section>
+                    <h2>{result.localizedHeadings.experience}</h2>
+                    {result.experience.map((item, index) => (
+                      <div className="printExperience" key={`${item.role}-${index}`}>
+                        <h3>{[item.role, item.company].filter(Boolean).join(" | ") || "Experience"}</h3>
+                        <ul>
+                          {item.rewrittenBullets.map((bullet) => <li key={bullet}>{bullet}</li>)}
+                        </ul>
+                      </div>
+                    ))}
+                  </section>
+
+                  {result.projects.length ? (
+                    <section>
+                      <h2>{result.localizedHeadings.projects}</h2>
+                      <ul>{result.projects.map((item) => <li key={item}>{item}</li>)}</ul>
+                    </section>
+                  ) : null}
+                </main>
+
+                <aside>
+                  <section>
+                    <h2>{result.localizedHeadings.skills}</h2>
+                    <div className="printSkillList">
+                      {(result.skills.matched.length ? result.skills.matched : result.skills.recommended).map((item) => <span key={item}>{item}</span>)}
+                    </div>
+                  </section>
+
+                  {candidateProfile.education.length ? (
+                    <section>
+                      <h2>{result.localizedHeadings.education}</h2>
+                      <ul>{candidateProfile.education.map((item) => <li key={item}>{item}</li>)}</ul>
+                    </section>
+                  ) : null}
+
+                  {candidateProfile.certifications.length ? (
+                    <section>
+                      <h2>{result.localizedHeadings.certifications}</h2>
+                      <ul>{candidateProfile.certifications.map((item) => <li key={item}>{item}</li>)}</ul>
+                    </section>
+                  ) : null}
+
+                  {result.skills.missing.length ? (
+                    <section className="printOnlyScreen">
+                      <h2>Keywords to Confirm</h2>
+                      <ul>{result.skills.missing.slice(0, 5).map((item) => <li key={item}>{item}</li>)}</ul>
+                    </section>
+                  ) : null}
+                </aside>
+              </div>
+            </article>
+
+            <article className="printableTailoredResume legacyTailoredResume">
               <header>
                 <div>
                   <h1>Abhishek Rahul</h1>
