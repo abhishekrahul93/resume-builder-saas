@@ -94,13 +94,98 @@ function uniqueWords(text: string) {
   );
 }
 
+const knownSkillPatterns = [
+  "SQL",
+  "Power BI",
+  "Tableau",
+  "Python",
+  "pandas",
+  "NumPy",
+  "scipy",
+  "matplotlib",
+  "R",
+  "Excel",
+  "Google Analytics",
+  "Looker Studio",
+  "LookML",
+  "dbt",
+  "Airflow",
+  "AWS",
+  "Athena",
+  "Glue",
+  "S3",
+  "ETL",
+  "Data Warehousing",
+  "Data Visualization",
+  "Dashboard Development",
+  "A/B Testing",
+  "Hypothesis Testing",
+  "Regression Analysis",
+  "Product Analytics",
+  "Cohort Analysis",
+  "Data Governance",
+  "Stakeholder Communication",
+  "Trino",
+  "JSON",
+  "Window Functions",
+  "CTEs"
+];
+
+const fallbackStopWords = new Set(["arden", "berlin", "germany", "required", "from", "team", "university", "analyst", "data", "work", "with", "your", "their", "eligible"]);
+
+function cleanLines(text: string) {
+  return text
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((line) => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean);
+}
+
+function sectionBetween(lines: string[], starts: string[], stops: string[]) {
+  const startIndex = lines.findIndex((line) => starts.some((start) => line.toLowerCase().includes(start)));
+  if (startIndex === -1) return "";
+  const rest = lines.slice(startIndex + 1);
+  const stopIndex = rest.findIndex((line) => stops.some((stop) => line.toLowerCase().includes(stop)));
+  return (stopIndex === -1 ? rest : rest.slice(0, stopIndex)).join("\n");
+}
+
+function skillRegex(skill: string) {
+  return new RegExp(`(^|[^a-z0-9])${skill.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").toLowerCase()}([^a-z0-9]|$)`);
+}
+
+function extractKnownSkills(text: string) {
+  const normalized = text.toLowerCase();
+  return knownSkillPatterns.filter((skill) => skillRegex(skill).test(normalized));
+}
+
+function extractSummary(oldCv: string) {
+  const lines = cleanLines(oldCv);
+  return sectionBetween(lines, ["professional summary", "summary", "profile", "profil"], ["professional experience", "work experience", "experience", "berufserfahrung", "technical skills", "skills"]).replace(/\n/g, " ").trim();
+}
+
+function extractExperienceBullets(oldCv: string) {
+  const lines = cleanLines(oldCv);
+  const experienceText =
+    sectionBetween(lines, ["professional experience", "work experience", "experience", "berufserfahrung"], ["portfolio projects", "projects", "technical skills", "skills", "education", "certifications", "languages"]) ||
+    lines.join("\n");
+
+  return cleanLines(experienceText)
+    .filter((line) => line.length > 35)
+    .filter((line) => !/@|linkedin|github|eligible|professional summary|technical skills|education|certifications|languages/i.test(line))
+    .filter((line) => !/^\d{4}\s*[–-]\s*\d{4}|^mar\s+\d{4}|^jul\s+\d{4}/i.test(line))
+    .map((line) => line.replace(/^[•\-*]\s*/, "").replace(/\.$/, ""))
+    .slice(0, 7);
+}
+
 function fallbackTailor({ jobDescription, oldCv, version = defaultVersion }: TailorRequest): TailorResult {
-  const jobWords = uniqueWords(jobDescription);
-  const cvWords = new Set(uniqueWords(oldCv));
-  const matched = jobWords.filter((word) => cvWords.has(word)).slice(0, 18);
-  const missing = jobWords.filter((word) => !cvWords.has(word)).slice(0, 18);
+  const cvSkills = extractKnownSkills(oldCv);
+  const jobSkills = extractKnownSkills(jobDescription);
+  const matched = cvSkills.filter((skill) => jobSkills.includes(skill)).slice(0, 18);
+  const missing = jobSkills.filter((skill) => !cvSkills.includes(skill)).slice(0, 18);
+  const recommended = Array.from(new Set([...cvSkills, ...matched, ...missing.slice(0, 4)])).slice(0, 16);
+  const jobWords = uniqueWords(jobDescription).filter((word) => !fallbackStopWords.has(word));
   const isGerman = version.language === "German" || version.format === "German Lebenslauf";
-  const bullets = oldCv
+  const rawBullets = oldCv
     .split(/\n|•|-/)
     .map((line) => line.trim())
     .filter((line) => line.length > 18)
@@ -110,25 +195,27 @@ function fallbackTailor({ jobDescription, oldCv, version = defaultVersion }: Tai
         ? `Optimierte Darstellung: ${line.replace(/\.$/, "")} mit klarerem Bezug zur Zielposition.`
         : `Strengthened ${line.replace(/\.$/, "")} with clearer business impact and job-relevant language.`
     );
+  const bullets = extractExperienceBullets(oldCv);
+  const summary = extractSummary(oldCv);
 
   return {
     version,
     localizedHeadings: headingsFor(version),
-    atsScore: Math.min(92, Math.max(35, Math.round((matched.length / Math.max(jobWords.length, 1)) * 100))),
+    atsScore: Math.min(92, Math.max(45, Math.round((matched.length / Math.max(jobSkills.length || jobWords.length, 1)) * 100))),
     marketFitScore: version.targetCountry ? 72 : 58,
-    professionalSummary: isGerman
+    professionalSummary: summary || (isGerman
       ? "Formales Profil mit Fokus auf relevante Erfahrung, nachweisbare Ergebnisse und passende Schlüsselbegriffe. Ergänzen Sie konkrete Kennzahlen nur, wenn diese belegbar sind."
-      : "Candidate profile aligned to the target role with emphasis on relevant experience, measurable outcomes, and ATS-friendly keywords. Add specific metrics where you can verify them.",
+      : "Candidate profile aligned to the target role with emphasis on relevant experience, measurable outcomes, and ATS-friendly keywords. Add specific metrics where you can verify them."),
     skills: {
-      matched,
+      matched: matched.length ? matched : cvSkills.slice(0, 12),
       missing,
-      recommended: matched.concat(missing.slice(0, 6)).slice(0, 14)
+      recommended
     },
     experience: [
       {
-        role: isGerman ? "Importierte Berufserfahrung" : "Imported CV experience",
+        role: isGerman ? "Berufserfahrung" : "Professional Experience",
         company: "",
-        rewrittenBullets: bullets.length ? bullets : [isGerman ? "Formulieren Sie vorhandene Aufgaben als belegbare Erfolge." : "Rewrite existing responsibilities into concise, achievement-led bullets based on verified experience."]
+        rewrittenBullets: bullets.length ? bullets : rawBullets.length ? rawBullets : [isGerman ? "Formulieren Sie vorhandene Aufgaben als belegbare Erfolge." : "Rewrite existing responsibilities into concise, achievement-led bullets based on verified experience."]
       }
     ],
     projects: [isGerman ? "Fügen Sie ein relevantes Projekt hinzu, das vorhandene Erfahrung für die Zielrolle belegt." : "Add one relevant project that proves the target job skills, using only work you actually completed."],
@@ -225,13 +312,13 @@ export async function POST(request: Request) {
         Authorization: `Bearer ${openAIKey}`
       },
       body: JSON.stringify({
-        model: "gpt-4.1-nano",
-        max_output_tokens: 1500,
+        model: "gpt-4.1-mini",
+        max_output_tokens: 3200,
         input: [
           {
             role: "system",
             content:
-              "You are a world-class multilingual resume writer, ATS optimization expert, European CV specialist, German Lebenslauf expert, and career coach.\n\nYou must generate a CV tailored to:\n- Job description\n- Candidate's existing CV\n- Selected language\n- Selected CV format\n- Target country\n- Selected tone\n\nNever invent facts. Translate and localize professionally. Use correct CV conventions for the target country. For German CVs, use professional German business language. For European CVs, use clear formal European CV style. Keep ATS compatibility unless the user selects a creative format.\n\nReturn only valid JSON matching the required schema."
+              "You are a world-class multilingual resume writer, ATS optimization expert, European CV specialist, German Lebenslauf expert, and career coach.\n\nYou must generate a CV tailored to:\n- Job description\n- Candidate's existing CV\n- Selected language\n- Selected CV format\n- Target country\n- Selected tone\n\nNever invent facts. Translate and localize professionally. Use correct CV conventions for the target country. For German CVs, use professional German business language. For European CVs, use clear formal European CV style. Keep ATS compatibility unless the user selects a creative format.\n\nReturn raw valid JSON only. Do not use markdown fences. Do not add commentary outside JSON."
           },
           {
             role: "user",
