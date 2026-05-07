@@ -195,7 +195,10 @@ h1 {
   font-weight: 800;
 }
 
-.platformPanel {
+.platformPanel,
+.simpleFlowPanel,
+.templateFocusPanel,
+.jobFeedbackPanel {
   display: grid;
   gap: 12px;
   margin-bottom: 18px;
@@ -203,6 +206,90 @@ h1 {
   border: 1px solid #c5d9ce;
   border-radius: 8px;
   background: linear-gradient(135deg, #f7fbf8, #ffffff);
+}
+
+.simpleFlowPanel h2,
+.templateFocusPanel h2,
+.jobFeedbackPanel h2 {
+  margin-bottom: 0;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.simpleFlowSteps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.simpleFlowSteps span {
+  display: grid;
+  place-items: center;
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--accent-strong);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.templateFocusPanel,
+.jobFeedbackPanel {
+  background: white;
+}
+
+.compactTemplateGallery {
+  grid-template-columns: 1fr;
+}
+
+.feedbackColumns {
+  display: grid;
+  gap: 10px;
+}
+
+.feedbackColumns h3 {
+  margin-bottom: 5px;
+  font-size: 0.86rem;
+}
+
+.feedbackColumns p,
+.feedbackColumns li {
+  color: var(--muted);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.feedbackColumns ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.advancedBuilderTools {
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  overflow: hidden;
+}
+
+.advancedBuilderTools summary {
+  cursor: pointer;
+  padding: 14px 16px;
+  color: var(--ink);
+  font-weight: 950;
+}
+
+.advancedBuilderTools > section {
+  margin: 0;
+  border-right: 0;
+  border-left: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.controlGroup:has(.legacyTemplateHeading) {
+  display: none;
 }
 
 .accountPanel {
@@ -1138,6 +1225,55 @@ select:focus {
   gap: 8px;
 }
 
+.tailorFeedbackPanel {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 16px;
+  border: 1px solid #c5d9ce;
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 14px 44px rgba(24, 34, 30, 0.08);
+  padding: 20px;
+}
+
+.tailorFeedbackPanel h2 {
+  margin-bottom: 6px;
+}
+
+.tailorFeedbackPanel p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.tailorFeedbackGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tailorFeedbackGrid div {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #f8fbf9;
+  padding: 12px;
+}
+
+.tailorFeedbackGrid h3 {
+  margin-bottom: 6px;
+  font-size: 0.88rem;
+}
+
+.tailorFeedbackGrid ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.tailorFeedbackGrid li {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .headingGrid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1777,7 +1913,8 @@ select:focus {
   }
 
   .exportPrompt,
-  .exportPromptActions {
+  .exportPromptActions,
+  .tailorFeedbackGrid {
     grid-template-columns: 1fr;
   }
 
@@ -1805,6 +1942,7 @@ select:focus {
   body:has(.tailorShell) .emptyState,
   body:has(.tailorShell) .scoreModule,
   body:has(.tailorShell) .exportPrompt,
+  body:has(.tailorShell) .tailorFeedbackPanel,
   body:has(.tailorShell) .analysisDetails,
   body:has(.tailorShell) .resultCard,
   body:has(.tailorShell) .comparisonPanel {

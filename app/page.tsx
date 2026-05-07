@@ -29,29 +29,19 @@ type SavedResume = {
 };
 
 const templateLabels: Record<string, string> = {
-  modern: "Modern CV",
-  classic: "Classic CV",
-  compact: "Compact CV",
-  executive: "Executive",
-  ats: "ATS Pro",
-  euro: "European",
-  creative: "Creative",
-  tech: "Tech"
+  ats: "ATS Professional",
+  euro: "European CV",
+  executive: "Modern Executive"
 };
 
 const templateDescriptions: Record<string, string> = {
-  modern: "Balanced layout for most professional roles.",
-  classic: "Traditional format for formal applications.",
-  compact: "Dense one-page style for experienced candidates.",
-  executive: "Boardroom-style hierarchy and stronger leadership tone.",
-  ats: "Clean ATS-first structure with minimal decoration.",
-  euro: "Formal CV style for European applications.",
-  creative: "Polished accent layout for product, marketing, and design.",
-  tech: "Project-forward format for data, engineering, and analytics."
+  ats: "Clean ATS-safe format for most job applications.",
+  euro: "Formal European style for Germany and EU roles.",
+  executive: "Premium modern layout for senior candidates."
 };
 
-const templates = ["modern", "classic", "compact", "executive", "ats", "euro", "creative", "tech"] as const;
-const proTemplates = new Set(["executive", "creative", "tech"]);
+const templates = ["ats", "euro", "executive"] as const;
+const proTemplates = new Set<string>();
 const defaultSectionOrder: SectionKey[] = ["summary", "experience", "skills", "projects", "education", "certifications"];
 const sectionLabels: Record<SectionKey, string> = {
   summary: "Professional Summary",
@@ -116,6 +106,22 @@ function jobKitInsights(resume: ResumeState) {
   ];
 }
 
+function targetJobFeedback(resume: ResumeState) {
+  const targetWords = Array.from(new Set((resume.targetJob.toLowerCase().match(/\b[a-z][a-z+#.-]{3,}\b/g) || []).filter((word) => !["with", "this", "that", "from", "your", "will", "role", "work", "team", "using", "have", "their"].includes(word)))).slice(0, 18);
+  const resumeText = `${resume.summary} ${resume.experience} ${resume.skills} ${resume.projects}`.toLowerCase();
+  const matched = targetWords.filter((word) => resumeText.includes(word)).slice(0, 8);
+  const missing = targetWords.filter((word) => !resumeText.includes(word)).slice(0, 8);
+  return {
+    matched,
+    missing,
+    suggestions: [
+      missing.length ? `Add these keywords only where true: ${missing.slice(0, 5).join(", ")}.` : "Good keyword coverage for the target job.",
+      /\d|%|reduced|increased|improved|automated|saved/i.test(resume.experience) ? "Your experience includes measurable impact." : "Add numbers to 2-3 bullets, such as time saved, reports automated, revenue influenced, or accuracy improved.",
+      resume.targetJob.length > 80 ? "Target job context is strong." : "Paste the full job description to get stronger tailoring feedback."
+    ]
+  };
+}
+
 function safeParse<T>(value: string | null, fallback: T): T {
   if (!value) return fallback;
   try {
@@ -132,7 +138,7 @@ function normalizeSectionOrder(value: SectionKey[]) {
 
 export default function Home() {
   const [resume, setResume] = useState(initialResume);
-  const [template, setTemplate] = useState<(typeof templates)[number]>("modern");
+  const [template, setTemplate] = useState<(typeof templates)[number]>("ats");
   const [builderView, setBuilderView] = useState<BuilderView>("resume");
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhancingSection, setEnhancingSection] = useState<SectionKey | "">("");
@@ -154,6 +160,7 @@ export default function Home() {
   const score = calculateScore(resume);
   const coverLetter = useMemo(() => coverLetterFromResume(resume), [resume]);
   const kitInsights = useMemo(() => jobKitInsights(resume), [resume]);
+  const jobFeedback = useMemo(() => targetJobFeedback(resume), [resume]);
 
   useEffect(() => {
     const storedAccount = safeParse<Account | null>(window.localStorage.getItem(accountStorageKey), null);
@@ -496,9 +503,6 @@ export default function Home() {
           <Link className="secondaryButton" href="/tailor">
             AI Tailor
           </Link>
-          <button className="secondaryButton" type="button" onClick={saveResumeSnapshot}>
-            Save
-          </button>
           <button className="primaryButton" type="button" onClick={enhanceResume} disabled={isEnhancing}>
             {isEnhancing ? "Enhancing..." : "Enhance CV"}
           </button>
@@ -506,6 +510,80 @@ export default function Home() {
             PDF
           </button>
         </div>
+
+        <section className="simpleFlowPanel" aria-label="Main resume builder flow">
+          <p className="eyebrow">Simple workflow</p>
+          <h2>Upload CV, choose a template, improve with AI, then download.</h2>
+          <div className="simpleFlowSteps">
+            <span>1 Upload</span>
+            <span>2 Template</span>
+            <span>3 Improve</span>
+            <span>4 Download</span>
+          </div>
+        </section>
+
+        <section className="uploadPanel" aria-label="Import existing CV">
+          <div>
+            <h2>Import Existing CV</h2>
+            <p>Upload a PDF, DOCX, or TXT resume to fill the builder automatically.</p>
+          </div>
+          <label className="fileButton">
+            {isImporting ? "Importing..." : "Upload CV"}
+            <input
+              type="file"
+              accept=".docx,.txt,.pdf"
+              disabled={isImporting}
+              onChange={(event) => {
+                void importCv(event.target.files?.[0]);
+                event.target.value = "";
+              }}
+            />
+          </label>
+          {importMessage ? <p className="importMessage">{importMessage}</p> : null}
+        </section>
+
+        <section className="templateFocusPanel">
+          <div>
+            <p className="eyebrow">Choose Template</p>
+            <h2>Three polished resume styles</h2>
+          </div>
+          <div className="templateGallery compactTemplateGallery" role="group" aria-label="Choose resume template">
+            {templates.map((option) => (
+              <button
+                className={`templateOption ${template === option ? "active" : ""}`}
+                key={option}
+                type="button"
+                onClick={() => chooseTemplate(option)}
+              >
+                <strong>{templateLabels[option]}</strong>
+                <small>{templateDescriptions[option]}</small>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="jobFeedbackPanel" aria-label="Job description feedback">
+          <div className="scorePanelHeader">
+            <div>
+              <p className="eyebrow">Job Feedback</p>
+              <h2>{score}/98</h2>
+            </div>
+            <span>{jobFeedback.matched.length}/{jobFeedback.matched.length + jobFeedback.missing.length || 1}</span>
+          </div>
+          <div className="feedbackColumns">
+            <div>
+              <h3>Matched keywords</h3>
+              <p>{jobFeedback.matched.length ? jobFeedback.matched.join(", ") : "Paste a full job description to compare keywords."}</p>
+            </div>
+            <div>
+              <h3>Improve next</h3>
+              <ul>{jobFeedback.suggestions.map((item) => <li key={item}>{item}</li>)}</ul>
+            </div>
+          </div>
+        </section>
+
+        <details className="advancedBuilderTools">
+          <summary>Advanced tools: account, save, reorder sections</summary>
 
         <section className="accountPanel" aria-label="Account and plan">
           {account ? (
@@ -517,6 +595,7 @@ export default function Home() {
               </div>
               <div className="accountActions">
                 <span className={account.plan === "pro" ? "planBadge pro" : "planBadge"}>{account.plan === "pro" ? "Pro" : "Free"}</span>
+                <button type="button" onClick={saveResumeSnapshot}>Save Resume</button>
                 {account.plan !== "pro" ? <button type="button" onClick={upgradeToPro}>Upgrade</button> : null}
                 <button type="button" onClick={signOut}>Sign out</button>
               </div>
@@ -633,6 +712,7 @@ export default function Home() {
             <p className="helperText">No saved resumes yet. Create a free account and click Save.</p>
           )}
         </section>
+        </details>
 
         <section className="controlGroup">
           <h2>Profile</h2>
@@ -674,7 +754,7 @@ export default function Home() {
         </section>
 
         <section className="controlGroup">
-          <h2>Template</h2>
+          <h2 className="legacyTemplateHeading">Template</h2>
           <div className="templateGallery" role="group" aria-label="Choose resume template">
             {templates.map((option) => (
               <button

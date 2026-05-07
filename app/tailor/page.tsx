@@ -644,6 +644,30 @@ export default function TailorPage() {
               </div>
             ) : null}
 
+            <section className="tailorFeedbackPanel">
+              <div>
+                <p className="eyebrow">Job-specific feedback</p>
+                <h2>What to improve before applying</h2>
+                <p>These suggestions are based on the job description. Add them only if they are true for your experience.</p>
+              </div>
+              <div className="tailorFeedbackGrid">
+                <div>
+                  <h3>Strong matches</h3>
+                  <p>{result.skills.matched.length ? result.skills.matched.slice(0, 8).join(", ") : "Generate again with a fuller CV to detect matches."}</p>
+                </div>
+                <div>
+                  <h3>Missing keywords</h3>
+                  <p>{result.skills.missing.length ? result.skills.missing.slice(0, 8).join(", ") : "No major keyword gaps detected."}</p>
+                </div>
+                <div>
+                  <h3>Recommended next edits</h3>
+                  <ul>
+                    {[...result.improvementTips.slice(0, 3), ...result.countrySpecificTips.slice(0, 2)].slice(0, 5).map((item) => <li key={item}>{item}</li>)}
+                  </ul>
+                </div>
+              </div>
+            </section>
+
             <article className="printableTailoredResume premiumTailoredResume">
               <header className="resumePrintHeader">
                 <div>
