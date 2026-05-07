@@ -2,9 +2,31 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { appliedResumeStorageKey, initialResume, listFromText, type ResumeState } from "@/lib/resume";
+import {
+  accountStorageKey,
+  appliedResumeStorageKey,
+  initialResume,
+  listFromText,
+  savedResumesStorageKey,
+  sectionOrderStorageKey,
+  type ResumeState
+} from "@/lib/resume";
 
 type BuilderView = "resume" | "cover" | "jobkit";
+type SectionKey = "summary" | "experience" | "skills" | "projects" | "education" | "certifications";
+type Plan = "free" | "pro";
+type Account = {
+  name: string;
+  email: string;
+  plan: Plan;
+};
+type SavedResume = {
+  id: string;
+  name: string;
+  template: string;
+  updatedAt: string;
+  resume: ResumeState;
+};
 
 const templateLabels: Record<string, string> = {
   modern: "Modern CV",
@@ -29,6 +51,16 @@ const templateDescriptions: Record<string, string> = {
 };
 
 const templates = ["modern", "classic", "compact", "executive", "ats", "euro", "creative", "tech"] as const;
+const proTemplates = new Set(["executive", "creative", "tech"]);
+const defaultSectionOrder: SectionKey[] = ["summary", "experience", "skills", "projects", "education", "certifications"];
+const sectionLabels: Record<SectionKey, string> = {
+  summary: "Professional Summary",
+  experience: "Experience",
+  skills: "Core Skills",
+  projects: "Selected Projects",
+  education: "Education",
+  certifications: "Certifications"
+};
 
 function calculateScore(resume: ResumeState) {
   let score = 45;
@@ -84,13 +116,33 @@ function jobKitInsights(resume: ResumeState) {
   ];
 }
 
+function safeParse<T>(value: string | null, fallback: T): T {
+  if (!value) return fallback;
+  try {
+    return JSON.parse(value) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function normalizeSectionOrder(value: SectionKey[]) {
+  const valid = value.filter((item): item is SectionKey => defaultSectionOrder.includes(item));
+  return [...valid, ...defaultSectionOrder.filter((item) => !valid.includes(item))];
+}
+
 export default function Home() {
   const [resume, setResume] = useState(initialResume);
   const [template, setTemplate] = useState<(typeof templates)[number]>("modern");
   const [builderView, setBuilderView] = useState<BuilderView>("resume");
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [enhancingSection, setEnhancingSection] = useState<SectionKey | "">("");
   const [isImporting, setIsImporting] = useState(false);
   const [importMessage, setImportMessage] = useState("");
+  const [account, setAccount] = useState<Account | null>(null);
+  const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
+  const [sectionOrder, setSectionOrder] = useState<SectionKey[]>(defaultSectionOrder);
+  const [draggedSection, setDraggedSection] = useState<SectionKey | null>(null);
+  const [upgradeMessage, setUpgradeMessage] = useState("");
 
   const contact = [resume.location, resume.email, resume.phone, resume.links].filter(Boolean);
   const bullets = useMemo(() => listFromText(resume.experience), [resume.experience]);
@@ -104,6 +156,15 @@ export default function Home() {
   const kitInsights = useMemo(() => jobKitInsights(resume), [resume]);
 
   useEffect(() => {
+    const storedAccount = safeParse<Account | null>(window.localStorage.getItem(accountStorageKey), null);
+    const storedResumes = safeParse<SavedResume[]>(window.localStorage.getItem(savedResumesStorageKey), []);
+    const storedOrder = normalizeSectionOrder(safeParse<SectionKey[]>(window.localStorage.getItem(sectionOrderStorageKey), defaultSectionOrder));
+    queueMicrotask(() => {
+      setAccount(storedAccount);
+      setSavedResumes(storedResumes);
+      setSectionOrder(storedOrder);
+    });
+
     const applied = window.localStorage.getItem(appliedResumeStorageKey);
     if (!applied) {
       return;
@@ -123,6 +184,136 @@ export default function Home() {
 
   function updateField(field: keyof ResumeState, value: string) {
     setResume((current) => ({ ...current, [field]: value }));
+  }
+
+  function signInDemo() {
+    const demoAccount: Account = {
+      name: resume.name || "CareerForge User",
+      email: resume.email || "user@careerforge.ai",
+      plan: "free"
+    };
+    setAccount(demoAccount);
+    window.localStorage.setItem(accountStorageKey, JSON.stringify(demoAccount));
+    setImportMessage("Demo account created. Real auth can connect to Supabase next.");
+  }
+
+  function upgradeToPro() {
+    if (!account) {
+      signInDemo();
+    }
+    const nextAccount: Account = {
+      ...(account || { name: resume.name || "CareerForge User", email: resume.email || "user@careerforge.ai" }),
+      plan: "pro"
+    };
+    setAccount(nextAccount);
+    window.localStorage.setItem(accountStorageKey, JSON.stringify(nextAccount));
+    setUpgradeMessage("Pro mode unlocked locally. Stripe checkout can be connected with live keys next.");
+  }
+
+  function signOut() {
+    setAccount(null);
+    window.localStorage.removeItem(accountStorageKey);
+  }
+
+  function chooseTemplate(option: (typeof templates)[number]) {
+    if (proTemplates.has(option) && account?.plan !== "pro") {
+      setUpgradeMessage(`${templateLabels[option]} is a Pro template. Upgrade to unlock premium templates and unlimited saved resumes.`);
+      return;
+    }
+    setTemplate(option);
+    setUpgradeMessage("");
+  }
+
+  function persistSavedResumes(next: SavedResume[]) {
+    setSavedResumes(next);
+    window.localStorage.setItem(savedResumesStorageKey, JSON.stringify(next));
+  }
+
+  function saveResumeSnapshot() {
+    if (!account) {
+      setUpgradeMessage("Create a free account first to save resumes.");
+      return;
+    }
+    if (account.plan === "free" && savedResumes.length >= 2) {
+      setUpgradeMessage("Free plan includes 2 saved resumes. Upgrade to Pro for unlimited versions.");
+      return;
+    }
+    const snapshot: SavedResume = {
+      id: crypto.randomUUID(),
+      name: `${resume.role || "Resume"} - ${new Date().toLocaleDateString()}`,
+      template,
+      updatedAt: new Date().toISOString(),
+      resume
+    };
+    persistSavedResumes([snapshot, ...savedResumes]);
+    setImportMessage("Resume saved to your local CareerForge account.");
+  }
+
+  function loadSavedResume(item: SavedResume) {
+    setResume(item.resume);
+    if (templates.includes(item.template as (typeof templates)[number])) {
+      setTemplate(item.template as (typeof templates)[number]);
+    }
+    setImportMessage("Saved resume loaded.");
+  }
+
+  function deleteSavedResume(id: string) {
+    persistSavedResumes(savedResumes.filter((item) => item.id !== id));
+  }
+
+  function moveSection(from: SectionKey, to: SectionKey) {
+    const fromIndex = sectionOrder.indexOf(from);
+    const toIndex = sectionOrder.indexOf(to);
+    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return;
+    const next = [...sectionOrder];
+    next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, from);
+    setSectionOrder(next);
+    window.localStorage.setItem(sectionOrderStorageKey, JSON.stringify(next));
+  }
+
+  function nudgeSection(section: SectionKey, direction: -1 | 1) {
+    const index = sectionOrder.indexOf(section);
+    const target = sectionOrder[index + direction];
+    if (!target) return;
+    moveSection(section, target);
+  }
+
+  async function enhanceSection(section: SectionKey) {
+    setEnhancingSection(section);
+    try {
+      const response = await fetch("/api/enhance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: resume.role,
+          summary: section === "summary" ? `${resume.summary}\n\nTarget job: ${resume.targetJob}` : resume.summary,
+          experience:
+            section === "experience"
+              ? resume.experience
+              : section === "projects"
+                ? resume.projects
+                : section === "skills"
+                  ? resume.skills
+                  : section === "education"
+                    ? resume.education
+                    : resume.certifications
+        })
+      });
+      const enhanced = await response.json();
+      setResume((current) => {
+        if (section === "summary") return { ...current, summary: enhanced.summary || current.summary };
+        const improvedText = Array.isArray(enhanced.bullets) ? enhanced.bullets.join("\n") : "";
+        if (!improvedText) return current;
+        if (section === "experience") return { ...current, experience: improvedText };
+        if (section === "projects") return { ...current, projects: improvedText };
+        if (section === "skills") return { ...current, skills: improvedText };
+        if (section === "education") return { ...current, education: improvedText };
+        return { ...current, certifications: improvedText };
+      });
+    } finally {
+      setEnhancingSection("");
+    }
   }
 
   async function enhanceResume() {
@@ -208,6 +399,88 @@ export default function Home() {
     }, 250);
   }
 
+  function renderResumeSection(section: SectionKey) {
+    if (section === "summary") {
+      return (
+        <section key={section}>
+          <h3>{sectionLabels.summary}</h3>
+          <p>{resume.summary}</p>
+        </section>
+      );
+    }
+
+    if (section === "experience") {
+      return (
+        <section key={section}>
+          <h3>{sectionLabels.experience}</h3>
+          <div className="experienceHeading">
+            <strong>{resume.experienceTitle || "Role, Company"}</strong>
+            <span>{resume.experienceDates}</span>
+          </div>
+          <ul>
+            {bullets.map((item) => (
+              <li key={item}>{item.replace(/^[-*]\s*/, "")}</li>
+            ))}
+          </ul>
+        </section>
+      );
+    }
+
+    if (section === "skills") {
+      return (
+        <section key={section}>
+          <h3>{sectionLabels.skills}</h3>
+          <div className="skillList">
+            {skills.map((skill) => (
+              <span key={skill}>{skill}</span>
+            ))}
+          </div>
+        </section>
+      );
+    }
+
+    if (section === "projects" && projects.length) {
+      return (
+        <section key={section}>
+          <h3>{sectionLabels.projects}</h3>
+          <ul>
+            {projects.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+      );
+    }
+
+    if (section === "education" && education.length) {
+      return (
+        <section key={section}>
+          <h3>{sectionLabels.education}</h3>
+          <ul>
+            {education.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+      );
+    }
+
+    if (section === "certifications" && certifications.length) {
+      return (
+        <section key={section}>
+          <h3>{sectionLabels.certifications}</h3>
+          <ul>
+            {certifications.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        </section>
+      );
+    }
+
+    return null;
+  }
+
   return (
     <main className="appShell">
       <aside className="builderPanel" aria-label="Resume builder controls">
@@ -223,6 +496,9 @@ export default function Home() {
           <Link className="secondaryButton" href="/tailor">
             AI Tailor
           </Link>
+          <button className="secondaryButton" type="button" onClick={saveResumeSnapshot}>
+            Save
+          </button>
           <button className="primaryButton" type="button" onClick={enhanceResume} disabled={isEnhancing}>
             {isEnhancing ? "Enhancing..." : "Enhance CV"}
           </button>
@@ -230,6 +506,33 @@ export default function Home() {
             PDF
           </button>
         </div>
+
+        <section className="accountPanel" aria-label="Account and plan">
+          {account ? (
+            <>
+              <div>
+                <p className="eyebrow">Account</p>
+                <h2>{account.name}</h2>
+                <p>{account.email}</p>
+              </div>
+              <div className="accountActions">
+                <span className={account.plan === "pro" ? "planBadge pro" : "planBadge"}>{account.plan === "pro" ? "Pro" : "Free"}</span>
+                {account.plan !== "pro" ? <button type="button" onClick={upgradeToPro}>Upgrade</button> : null}
+                <button type="button" onClick={signOut}>Sign out</button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <p className="eyebrow">Account</p>
+                <h2>Save resumes and unlock Pro tools</h2>
+                <p>Demo login now, Supabase auth next.</p>
+              </div>
+              <button type="button" onClick={signInDemo}>Create Free Account</button>
+            </>
+          )}
+          {upgradeMessage ? <p className="upgradeMessage">{upgradeMessage}</p> : null}
+        </section>
 
         <section className="platformPanel" aria-label="CareerForge product workflow">
           <p className="eyebrow">Application Studio</p>
@@ -281,6 +584,57 @@ export default function Home() {
         </section>
 
         <section className="controlGroup">
+          <h2>Section Studio</h2>
+          <p className="helperText">Drag sections to reorder the resume. Use AI Improve for section-level suggestions.</p>
+          <div className="sectionStudio">
+            {sectionOrder.map((section) => (
+              <div
+                className="sectionStudioItem"
+                draggable
+                key={section}
+                onDragStart={() => setDraggedSection(section)}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={() => {
+                  if (draggedSection) moveSection(draggedSection, section);
+                  setDraggedSection(null);
+                }}
+              >
+                <span>{sectionLabels[section]}</span>
+                <div>
+                  <button type="button" onClick={() => nudgeSection(section, -1)} aria-label={`Move ${sectionLabels[section]} up`}>Up</button>
+                  <button type="button" onClick={() => nudgeSection(section, 1)} aria-label={`Move ${sectionLabels[section]} down`}>Down</button>
+                  <button type="button" onClick={() => void enhanceSection(section)} disabled={Boolean(enhancingSection)}>
+                    {enhancingSection === section ? "Improving..." : "AI Improve"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="controlGroup">
+          <h2>Saved Resumes</h2>
+          {savedResumes.length ? (
+            <div className="savedResumeList">
+              {savedResumes.map((item) => (
+                <article className="savedResumeItem" key={item.id}>
+                  <div>
+                    <strong>{item.name}</strong>
+                    <p>{templateLabels[item.template] || item.template} · {new Date(item.updatedAt).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <button type="button" onClick={() => loadSavedResume(item)}>Load</button>
+                    <button type="button" onClick={() => deleteSavedResume(item.id)}>Delete</button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <p className="helperText">No saved resumes yet. Create a free account and click Save.</p>
+          )}
+        </section>
+
+        <section className="controlGroup">
           <h2>Profile</h2>
           <Field label="Full name" value={resume.name} onChange={(value) => updateField("name", value)} />
           <Field label="Target role" value={resume.role} onChange={(value) => updateField("role", value)} />
@@ -327,10 +681,10 @@ export default function Home() {
                 className={`templateOption ${template === option ? "active" : ""}`}
                 key={option}
                 type="button"
-                onClick={() => setTemplate(option)}
+                onClick={() => chooseTemplate(option)}
               >
                 <strong>{templateLabels[option]}</strong>
-                <small>{templateDescriptions[option]}</small>
+                <small>{templateDescriptions[option]}{proTemplates.has(option) ? " · Pro" : ""}</small>
               </button>
             ))}
           </div>
@@ -367,65 +721,7 @@ export default function Home() {
             </ul>
           </header>
 
-          <section>
-            <h3>Professional Summary</h3>
-            <p>{resume.summary}</p>
-          </section>
-
-          <section>
-            <h3>Experience</h3>
-            <div className="experienceHeading">
-              <strong>{resume.experienceTitle || "Role, Company"}</strong>
-              <span>{resume.experienceDates}</span>
-            </div>
-            <ul>
-              {bullets.map((item) => (
-                <li key={item}>{item.replace(/^[-*]\s*/, "")}</li>
-              ))}
-            </ul>
-          </section>
-
-          <section>
-            <h3>Core Skills</h3>
-            <div className="skillList">
-              {skills.map((skill) => (
-                <span key={skill}>{skill}</span>
-              ))}
-            </div>
-          </section>
-
-          {projects.length ? (
-            <section>
-              <h3>Selected Projects</h3>
-              <ul>
-                {projects.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
-          {education.length ? (
-            <section>
-              <h3>Education</h3>
-              <ul>
-                {education.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
-          {certifications.length ? (
-            <section>
-              <h3>Certifications</h3>
-              <ul>
-                {certifications.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
+          {sectionOrder.map((section) => renderResumeSection(section))}
         </article> : null}
 
         {builderView === "cover" ? (

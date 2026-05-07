@@ -22,6 +22,9 @@ export type ResumeState = {
 
 export const appliedResumeStorageKey = "careerforge.appliedResume";
 export const savedVersionsStorageKey = "careerforge.savedVersions";
+export const savedResumesStorageKey = "careerforge.savedResumes";
+export const accountStorageKey = "careerforge.account";
+export const sectionOrderStorageKey = "careerforge.sectionOrder";
 
 export const initialResume: ResumeState = {
   name: "Abhishek Rahul",
