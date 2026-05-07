@@ -4,13 +4,31 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { appliedResumeStorageKey, initialResume, listFromText, type ResumeState } from "@/lib/resume";
 
-type Template = "modern" | "classic" | "compact";
+type BuilderView = "resume" | "cover" | "jobkit";
 
-const templateLabels: Record<Template, string> = {
+const templateLabels: Record<string, string> = {
   modern: "Modern CV",
   classic: "Classic CV",
-  compact: "Compact CV"
+  compact: "Compact CV",
+  executive: "Executive",
+  ats: "ATS Pro",
+  euro: "European",
+  creative: "Creative",
+  tech: "Tech"
 };
+
+const templateDescriptions: Record<string, string> = {
+  modern: "Balanced layout for most professional roles.",
+  classic: "Traditional format for formal applications.",
+  compact: "Dense one-page style for experienced candidates.",
+  executive: "Boardroom-style hierarchy and stronger leadership tone.",
+  ats: "Clean ATS-first structure with minimal decoration.",
+  euro: "Formal CV style for European applications.",
+  creative: "Polished accent layout for product, marketing, and design.",
+  tech: "Project-forward format for data, engineering, and analytics."
+};
+
+const templates = ["modern", "classic", "compact", "executive", "ats", "euro", "creative", "tech"] as const;
 
 function calculateScore(resume: ResumeState) {
   let score = 45;
@@ -37,9 +55,39 @@ function qualityChecks(resume: ResumeState) {
   ];
 }
 
+function coverLetterFromResume(resume: ResumeState) {
+  const companySignal = resume.targetJob.match(/\b(?:at|for|with)\s+([A-Z][A-Za-z0-9&.\-\s]{2,40})/)?.[1]?.trim();
+  return [
+    `Dear Hiring Team${companySignal ? ` at ${companySignal}` : ""},`,
+    "",
+    `I am excited to apply for the ${resume.role || "open"} role. My background combines ${listFromText(resume.skills).slice(0, 4).join(", ")} with practical experience delivering measurable business outcomes.`,
+    "",
+    resume.summary,
+    "",
+    `In my recent work, I have focused on ${listFromText(resume.experience).slice(0, 2).join(" and ")}. I would welcome the opportunity to bring the same structured, impact-driven approach to your team.`,
+    "",
+    "Thank you for your time and consideration. I would be glad to discuss how my experience can support your goals.",
+    "",
+    `Sincerely,\n${resume.name}`
+  ].join("\n");
+}
+
+function jobKitInsights(resume: ResumeState) {
+  const skills = listFromText(resume.skills);
+  const bullets = listFromText(resume.experience);
+  return [
+    { label: "Add 8-14 targeted skills", status: skills.length >= 8 ? "Strong" : "Improve", detail: `${skills.length} skills detected` },
+    { label: "Use metrics in experience", status: /\d|%|reduced|increased|improved|automated|saved/i.test(resume.experience) ? "Strong" : "Improve", detail: "Recruiters scan for measurable impact" },
+    { label: "Keep bullets concise", status: bullets.every((item) => item.length < 180) ? "Strong" : "Improve", detail: "Short bullets improve readability" },
+    { label: "Target job context", status: resume.targetJob.length > 80 ? "Strong" : "Improve", detail: "Tailoring needs the job description" },
+    { label: "Matching cover letter", status: resume.summary.length > 80 ? "Ready" : "Improve", detail: "Generated from your current resume" }
+  ];
+}
+
 export default function Home() {
   const [resume, setResume] = useState(initialResume);
-  const [template, setTemplate] = useState<Template>("modern");
+  const [template, setTemplate] = useState<(typeof templates)[number]>("modern");
+  const [builderView, setBuilderView] = useState<BuilderView>("resume");
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importMessage, setImportMessage] = useState("");
@@ -52,6 +100,8 @@ export default function Home() {
   const skills = useMemo(() => listFromText(resume.skills), [resume.skills]);
   const checks = qualityChecks(resume);
   const score = calculateScore(resume);
+  const coverLetter = useMemo(() => coverLetterFromResume(resume), [resume]);
+  const kitInsights = useMemo(() => jobKitInsights(resume), [resume]);
 
   useEffect(() => {
     const applied = window.localStorage.getItem(appliedResumeStorageKey);
@@ -181,6 +231,17 @@ export default function Home() {
           </button>
         </div>
 
+        <section className="platformPanel" aria-label="CareerForge product workflow">
+          <p className="eyebrow">Application Studio</p>
+          <h2>Build, tailor, export, and track one job-ready application kit.</h2>
+          <div className="workflowSteps">
+            <span className="done">Import</span>
+            <span className={resume.targetJob.length > 40 ? "done" : ""}>Target</span>
+            <span className={score > 75 ? "done" : ""}>Optimize</span>
+            <span className={score > 85 ? "done" : ""}>Export</span>
+          </div>
+        </section>
+
         <section className="uploadPanel" aria-label="Import existing CV">
           <div>
             <h2>Import Existing CV</h2>
@@ -260,15 +321,16 @@ export default function Home() {
 
         <section className="controlGroup">
           <h2>Template</h2>
-          <div className="segmentedControl" role="group" aria-label="Choose resume template">
-            {(["modern", "classic", "compact"] as Template[]).map((option) => (
+          <div className="templateGallery" role="group" aria-label="Choose resume template">
+            {templates.map((option) => (
               <button
                 className={`templateOption ${template === option ? "active" : ""}`}
                 key={option}
                 type="button"
                 onClick={() => setTemplate(option)}
               >
-                {option}
+                <strong>{templateLabels[option]}</strong>
+                <small>{templateDescriptions[option]}</small>
               </button>
             ))}
           </div>
@@ -278,8 +340,13 @@ export default function Home() {
       <section className="previewStage" aria-label="Resume preview">
         <div className="previewTopbar">
           <div>
-            <p className="eyebrow">Live preview</p>
-            <h2>{templateLabels[template]}</h2>
+            <p className="eyebrow">Live application kit</p>
+            <h2>{builderView === "resume" ? templateLabels[template] : builderView === "cover" ? "Matching Cover Letter" : "Job Readiness Kit"}</h2>
+          </div>
+          <div className="viewTabs" role="tablist" aria-label="Preview mode">
+            <button className={builderView === "resume" ? "active" : ""} type="button" onClick={() => setBuilderView("resume")}>Resume</button>
+            <button className={builderView === "cover" ? "active" : ""} type="button" onClick={() => setBuilderView("cover")}>Cover Letter</button>
+            <button className={builderView === "jobkit" ? "active" : ""} type="button" onClick={() => setBuilderView("jobkit")}>Job Kit</button>
           </div>
           <div className="scoreCard" aria-label="Resume strength score">
             <span>{score}</span>
@@ -287,7 +354,7 @@ export default function Home() {
           </div>
         </div>
 
-        <article className={`resume ${template}`}>
+        {builderView === "resume" ? <article className={`resume ${template}`}>
           <header className="resumeHeader">
             <div>
               <h2>{resume.name || "Your Name"}</h2>
@@ -359,7 +426,45 @@ export default function Home() {
               </ul>
             </section>
           ) : null}
-        </article>
+        </article> : null}
+
+        {builderView === "cover" ? (
+          <article className={`resume coverLetterPreview ${template}`}>
+            <header className="resumeHeader">
+              <div>
+                <h2>{resume.name || "Your Name"}</h2>
+                <p>Cover Letter for {resume.role || "Target Role"}</p>
+              </div>
+              <ul className="contactList">
+                {contact.map((item) => <li key={item}>{item}</li>)}
+              </ul>
+            </header>
+            <section>
+              <h3>Cover Letter Draft</h3>
+              <pre>{coverLetter}</pre>
+            </section>
+          </article>
+        ) : null}
+
+        {builderView === "jobkit" ? (
+          <section className="jobKitBoard">
+            <article className="jobKitHero">
+              <p className="eyebrow">Better than a resume builder</p>
+              <h2>Complete application readiness</h2>
+              <p>CareerForge combines resume building, AI tailoring, multilingual CV versions, cover letter drafting, ATS checks, and export-ready documents in one workflow.</p>
+              <Link className="primaryButton" href="/tailor">Open AI CV Tailor</Link>
+            </article>
+            <div className="jobKitGrid">
+              {kitInsights.map((item) => (
+                <article className="jobKitCard" key={item.label}>
+                  <span className={item.status === "Strong" || item.status === "Ready" ? "strong" : "improve"}>{item.status}</span>
+                  <h3>{item.label}</h3>
+                  <p>{item.detail}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+        ) : null}
       </section>
     </main>
   );

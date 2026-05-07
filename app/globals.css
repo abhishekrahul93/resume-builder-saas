@@ -195,6 +195,46 @@ h1 {
   font-weight: 800;
 }
 
+.platformPanel {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid #c5d9ce;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #f7fbf8, #ffffff);
+}
+
+.platformPanel h2 {
+  margin-bottom: 0;
+  font-size: 1rem;
+  line-height: 1.35;
+}
+
+.workflowSteps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+.workflowSteps span {
+  display: grid;
+  place-items: center;
+  min-height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.workflowSteps span.done {
+  border-color: var(--accent);
+  background: #e9f7ee;
+  color: var(--accent-strong);
+}
+
 .scorePanel {
   display: grid;
   gap: 14px;
@@ -319,6 +359,12 @@ select:focus {
   background: #f3f6f4;
 }
 
+.templateGallery {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
 .templateOption {
   background: transparent;
   color: var(--muted);
@@ -326,10 +372,38 @@ select:focus {
   text-transform: capitalize;
 }
 
+.templateGallery .templateOption {
+  display: grid;
+  gap: 4px;
+  align-content: start;
+  min-height: 82px;
+  padding: 10px;
+  border-color: var(--line);
+  background: white;
+  text-align: left;
+  text-transform: none;
+}
+
+.templateGallery .templateOption strong {
+  color: var(--ink);
+  font-size: 0.86rem;
+}
+
+.templateGallery .templateOption small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
 .templateOption.active {
   background: white;
   color: var(--ink);
   box-shadow: 0 6px 16px rgba(24, 34, 30, 0.08);
+}
+
+.templateGallery .templateOption.active {
+  border-color: var(--accent);
+  background: #f1f9f5;
 }
 
 .previewStage {
@@ -366,6 +440,29 @@ select:focus {
   font-weight: 700;
 }
 
+.viewTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.viewTabs button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0 12px;
+  font-weight: 850;
+}
+
+.viewTabs button.active {
+  border-color: var(--accent);
+  background: #e9f7ee;
+  color: var(--accent-strong);
+}
+
 .resume {
   width: min(100%, 920px);
   min-height: 1120px;
@@ -379,6 +476,72 @@ select:focus {
   background:
     linear-gradient(90deg, rgba(31, 122, 90, 0.08) 0 18px, transparent 18px),
     var(--paper);
+}
+
+.resume.executive .resumeHeader {
+  border-bottom-color: #1d2a34;
+}
+
+.resume.executive .resumeHeader p,
+.resume.executive h3 {
+  color: #2f5167;
+}
+
+.resume.ats {
+  box-shadow: none;
+}
+
+.resume.ats .resumeHeader {
+  border-bottom-width: 2px;
+}
+
+.resume.ats .skillList span {
+  border-radius: 4px;
+  background: white;
+}
+
+.resume.euro {
+  border-top: 12px solid #1f7a5a;
+}
+
+.resume.euro .resumeHeader {
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.resume.euro .contactList {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  text-align: left;
+}
+
+.resume.creative {
+  background:
+    linear-gradient(180deg, rgba(217, 147, 61, 0.16) 0 96px, transparent 96px),
+    white;
+}
+
+.resume.creative .resumeHeader {
+  border-bottom-color: var(--warm);
+}
+
+.resume.creative .resumeHeader p,
+.resume.creative h3 {
+  color: #a76212;
+}
+
+.resume.tech {
+  background:
+    linear-gradient(90deg, #18221e 0 14px, transparent 14px),
+    white;
+}
+
+.resume.tech .resumeHeader {
+  border-bottom-color: #18221e;
+}
+
+.resume.tech .skillList span {
+  background: #eef3f7;
+  color: #263b48;
 }
 
 .resumeHeader {
@@ -464,6 +627,94 @@ select:focus {
   color: #2c3934;
   font-size: 0.86rem;
   font-weight: 800;
+}
+
+.coverLetterPreview pre {
+  white-space: pre-wrap;
+  margin: 0;
+  color: #38443f;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.jobKitBoard {
+  width: min(100%, 920px);
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+}
+
+.jobKitHero,
+.jobKitCard {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: white;
+  box-shadow: var(--shadow);
+}
+
+.jobKitHero {
+  display: grid;
+  gap: 12px;
+  padding: 28px;
+}
+
+.jobKitHero h2 {
+  margin-bottom: 0;
+  font-size: 2rem;
+}
+
+.jobKitHero p:not(.eyebrow) {
+  max-width: 720px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.jobKitHero .primaryButton {
+  width: fit-content;
+  min-width: 180px;
+  padding: 0 18px;
+}
+
+.jobKitGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.jobKitCard {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+}
+
+.jobKitCard span {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 0.72rem;
+  font-weight: 950;
+}
+
+.jobKitCard span.strong {
+  background: #e9f7ee;
+  color: #14603f;
+}
+
+.jobKitCard span.improve {
+  background: #fff2df;
+  color: #8b4d0c;
+}
+
+.jobKitCard h3 {
+  margin-bottom: 0;
+  font-size: 1rem;
+}
+
+.jobKitCard p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.45;
 }
 
 .resume.classic {
@@ -554,6 +805,11 @@ select:focus {
   }
 
   .resume.compact .contactList {
+    grid-template-columns: 1fr;
+  }
+
+  .jobKitGrid,
+  .templateGallery {
     grid-template-columns: 1fr;
   }
 
