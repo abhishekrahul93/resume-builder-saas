@@ -150,6 +150,7 @@ export default function Home() {
   const [builderView, setBuilderView] = useState<BuilderView>("resume");
   const [activeStep, setActiveStep] = useState<BuilderStep>("upload");
   const [isEnhancing, setIsEnhancing] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
   const [enhancingSection, setEnhancingSection] = useState<SectionKey | "">("");
   const [isImporting, setIsImporting] = useState(false);
   const [importMessage, setImportMessage] = useState("");
@@ -414,13 +415,106 @@ export default function Home() {
     }
   }
 
-  function printResume() {
-    const previousTitle = document.title;
-    document.title = resume.exportFileName || `${resume.name || "resume"}-${resume.versionLanguage || "cv"}`;
-    window.print();
-    window.setTimeout(() => {
-      document.title = previousTitle;
-    }, 250);
+  function exportHeadings() {
+    if (resume.versionLanguage === "German" || resume.versionFormat === "German Lebenslauf") {
+      return {
+        summary: "Profil",
+        skills: "F\u00e4higkeiten",
+        experience: "Berufserfahrung",
+        education: "Ausbildung",
+        projects: "Projekte",
+        certifications: "Zertifizierungen",
+        languages: "Sprachen"
+      };
+    }
+
+    if (template === "euro" || resume.versionFormat === "European CV") {
+      return {
+        summary: "Profile",
+        skills: "Skills",
+        experience: "Professional Experience",
+        education: "Education",
+        projects: "Projects",
+        certifications: "Certifications",
+        languages: "Languages"
+      };
+    }
+
+    return {
+      summary: "Professional Summary",
+      skills: "Core Skills",
+      experience: "Experience",
+      education: "Education",
+      projects: "Selected Projects",
+      certifications: "Certifications",
+      languages: "Languages"
+    };
+  }
+
+  async function downloadResumePdf() {
+    setIsDownloadingPdf(true);
+    setImportMessage("");
+
+    const fileName = resume.exportFileName || `${(resume.name || "resume").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-cv.pdf`;
+    const response = await fetch("/api/export/pdf", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        fileName,
+        profile: {
+          name: resume.name,
+          role: resume.role,
+          location: resume.location,
+          email: resume.email,
+          phone: resume.phone,
+          links: resume.links.split("|").map((item) => item.trim()).filter(Boolean),
+          education,
+          certifications
+        },
+        result: {
+          version: {
+            language: resume.versionLanguage || "English",
+            format: resume.versionFormat || templateLabels[template],
+            targetCountry: resume.location.includes("Germany") ? "Germany" : "",
+            tone: "Professional",
+            designStyle: template === "euro" ? "European Formal" : template === "executive" ? "Executive" : "ATS Standard"
+          },
+          localizedHeadings: exportHeadings(),
+          professionalSummary: resume.summary,
+          skills: {
+            matched: skills,
+            recommended: [],
+            missing: []
+          },
+          experience: [
+            {
+              role: resume.experienceTitle,
+              company: "",
+              rewrittenBullets: bullets
+            }
+          ],
+          projects
+        }
+      })
+    });
+
+    if (!response.ok) {
+      setImportMessage("Could not create PDF. Please try again.");
+      setIsDownloadingPdf(false);
+      return;
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    setIsDownloadingPdf(false);
+    setImportMessage("PDF downloaded without browser headers.");
   }
 
   function renderResumeSection(section: SectionKey) {
@@ -529,8 +623,8 @@ export default function Home() {
           <button className="primaryButton" type="button" onClick={enhanceResume} disabled={isEnhancing}>
             {isEnhancing ? "Enhancing..." : "Enhance CV"}
           </button>
-          <button className="iconButton" type="button" onClick={printResume} aria-label="Print or save as PDF">
-            PDF
+          <button className="iconButton" type="button" onClick={() => void downloadResumePdf()} aria-label="Download PDF" disabled={isDownloadingPdf}>
+            {isDownloadingPdf ? "..." : "PDF"}
           </button>
         </div>
 
@@ -620,7 +714,9 @@ export default function Home() {
             <p>Your resume is live on the right. Use PDF when you are ready, or open AI Tailor for a job-specific version.</p>
           </div>
           <div className="downloadActions">
-            <button className="primaryButton" type="button" onClick={printResume}>Download PDF</button>
+            <button className="primaryButton" type="button" onClick={() => void downloadResumePdf()} disabled={isDownloadingPdf}>
+              {isDownloadingPdf ? "Preparing..." : "Download PDF"}
+            </button>
             <Link className="secondaryButton" href="/tailor">Tailor for a Job</Link>
           </div>
         </section>
