@@ -3055,3 +3055,38 @@ select:focus {
     flex-direction: column;
   }
 }
+
+/* Fix sidebar action overlap on production-width layouts. */
+.builderPanel .toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: stretch;
+  gap: 10px;
+}
+
+.builderPanel .toolbar .secondaryButton,
+.builderPanel .toolbar .iconButton,
+.builderPanel .toolbar .primaryButton {
+  width: 100%;
+  min-width: 0;
+  min-height: 56px;
+  padding: 0 8px;
+  text-align: center;
+  white-space: normal;
+  line-height: 1.15;
+}
+
+.builderPanel .toolbar .primaryButton {
+  grid-column: span 2;
+  flex: none;
+}
+
+@media (max-width: 420px) {
+  .builderPanel .toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .builderPanel .toolbar .primaryButton {
+    grid-column: span 1;
+  }
+}
