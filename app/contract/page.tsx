@@ -151,6 +151,27 @@ export default function ContractAnalyzerPage() {
         </div>
       </section>
 
+      <section className="pilotLearningStrip" aria-label="Pilot learning focus">
+        <div>
+          <p className="eyebrow">Pilot hypothesis</p>
+          <h2>Payment exposure is the first risk most SMEs understand instantly.</h2>
+        </div>
+        <div className="pilotLearningGrid">
+          <article>
+            <strong>Cash-flow risk</strong>
+            <span>Flags 60-120 day payment terms and unpaid work exposure.</span>
+          </article>
+          <article>
+            <strong>MSME protection</strong>
+            <span>Checks whether payment language should align with 45-day MSME expectations.</span>
+          </article>
+          <article>
+            <strong>Willingness to pay</strong>
+            <span>Beta feedback asks whether Rs. 499, Rs. 999, or Rs. 1,999 feels fair.</span>
+          </article>
+        </div>
+      </section>
+
       <section className="contractWorkspace">
         <aside className="contractInputPanel" aria-label="Upload or paste contract">
           <div>

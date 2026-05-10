@@ -34,6 +34,8 @@ ClauseRisk India starts with review, then expands into contract lifecycle manage
 
 Contract review is the wedge. It is the highest-pain moment for SMEs because the founder already has a contract in hand and needs a fast answer before signing. Once ClauseRisk earns trust at the review stage, it can naturally expand into drafting, negotiation, e-sign, storage, and renewals.
 
+Payment exposure is the wedge inside the wedge. Indian SMEs immediately understand delayed invoice risk: 60-120 day payment terms, vague acceptance clauses, and continued work obligations can create direct cash-flow pain. If beta users consistently choose MSME/payment terms as the most useful flag, the first GTM wedge should be vendor-side cash-flow protection.
+
 ## India-Specific Differentiation
 
 Generic contract tools miss local SME context. ClauseRisk India focuses on:
@@ -130,6 +132,10 @@ Do not apologize for being solo. Frame it as an execution advantage:
 - High velocity: I deployed feedback-driven product updates in 24 hours, including perspective-aware review, Gemini integration, WhatsApp sharing, privacy copy, pricing signal, and public deployment.
 - Low burn: With near-zero infrastructure cost and a focused MVP, I can keep iterating until product-market fit without a short runway forcing premature scaling.
 - Technical depth: I built the full-stack architecture, PDF/DOCX ingestion, Gemini structured analysis, deployment, and product UX myself, proving I can lead the technical roadmap before hiring.
+
+If asked about team:
+
+I am currently a full-stack solo builder handling product, AI logic, frontend, deployment, and legal prompting. I am using this immersion program to validate the technical and market wedge before bringing on a cofounder or founding operator with strengths in sales, legal operations, or partnerships.
 
 ## Biggest Technical Challenge
 

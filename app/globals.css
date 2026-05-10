@@ -3220,6 +3220,55 @@ select:focus {
   line-height: 1.35;
 }
 
+.pilotLearningStrip {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  gap: 18px;
+  align-items: center;
+  width: min(1220px, 100%);
+  margin: 0 auto 18px;
+  border: 1px solid #cfe9dc;
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, #f2fbf6, #ffffff);
+  box-shadow: var(--soft-shadow);
+  padding: 18px;
+}
+
+.pilotLearningStrip h2 {
+  margin-bottom: 0;
+  font-size: clamp(1.25rem, 3vw, 1.9rem);
+  line-height: 1.12;
+}
+
+.pilotLearningGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.pilotLearningGrid article {
+  display: grid;
+  gap: 6px;
+  min-height: 112px;
+  align-content: center;
+  border: 1px solid #dcefe4;
+  border-radius: 8px;
+  background: white;
+  padding: 12px;
+}
+
+.pilotLearningGrid strong {
+  color: #14603f;
+  font-size: 0.92rem;
+}
+
+.pilotLearningGrid span {
+  color: #53627a;
+  font-size: 0.8rem;
+  line-height: 1.38;
+}
+
 .contractWorkspace {
   display: grid;
   grid-template-columns: 420px minmax(0, 1fr);
@@ -3803,6 +3852,7 @@ select:focus {
 
 @media (max-width: 980px) {
   .contractHero,
+  .pilotLearningStrip,
   .contractWorkspace,
   .reportGrid,
   .lawFeatureGrid,
@@ -3835,6 +3885,7 @@ select:focus {
   .contractNav > div,
   .contractActions,
   .contractMetrics,
+  .pilotLearningGrid,
   .ghostReport {
     grid-template-columns: 1fr;
   }

@@ -4,11 +4,17 @@ Live demo: https://clauserisk-india.vercel.app/contract
 
 ## Short WhatsApp Message
 
-Hey, I am building ClauseRisk India, an AI contract review copilot for Indian SMEs.
+Hey, I am building ClauseRisk India.
 
-It reviews vendor agreements, NDAs, service contracts, and payment terms, then flags issues like delayed payments, broad indemnity, foreign jurisdiction, GST gaps, DPDP data clauses, MSME 45-day payment exposure, and cheque-bounce risk.
+I am trying to save Indian SMEs from signing bad vendor contracts that cause payment delays, legal headaches, or unfair liability.
 
-Can I review one old contract for you for free? You can remove names, prices, and confidential details before sharing. I will send back a short risk report.
+It reviews vendor agreements, NDAs, service contracts, and payment terms, then flags risks like MSME 45-day payment exposure, GST gaps, broad indemnity, foreign jurisdiction, DPDP data clauses, and cheque-bounce risk.
+
+Can you test it once and tell me if the report is useful?
+
+Demo: https://clauserisk-india.vercel.app
+
+You can paste a sample/old contract or remove names, prices, and confidential details before uploading.
 
 ## Founder / LinkedIn Message
 
@@ -16,11 +22,13 @@ Hi [Name],
 
 I am piloting ClauseRisk India, a Gemini-powered contract review copilot for Indian SMEs and founders.
 
+The goal is simple: save Indian SMEs from signing bad contracts that cause payment delays, legal headaches, or unfair liability.
+
 The product helps a founder upload a vendor contract or NDA and get a plain-English risk report covering payment terms, liability, termination, IP, DPDP data protection, GST/payment documentation, MSME 45-day payment exposure, and dispute resolution.
 
 Would you be open to testing it with one old contract or sharing feedback on the demo?
 
-Demo: https://clauserisk-india.vercel.app/contract
+Demo: https://clauserisk-india.vercel.app
 
 ## What To Ask After They Test
 
@@ -29,6 +37,10 @@ Demo: https://clauserisk-india.vercel.app/contract
 3. Did it miss anything important?
 4. Would you pay Rs. 499, Rs. 999, or Rs. 1,999 per contract review?
 5. Can I quote your feedback anonymously in our pilot results?
+
+## Hypothesis To Validate
+
+Payment exposure is likely the strongest first wedge. Track whether testers choose MSME/payment terms as the most useful risk flag, because cash-flow pain is immediate and easier to understand than arbitration or indemnity.
 
 ## Pilot Tracker Columns
 
