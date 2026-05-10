@@ -86,16 +86,16 @@ function analyzeLocally(text: string, perspective: ReviewPerspective): ContractA
   const missingProtections: string[] = [];
   const isVendor = perspective === "vendor";
 
-  if (/90\s*days|120\s*days|ninety\s*days|one hundred twenty/i.test(text)) {
+  if (/60\s*days|90\s*days|120\s*days|sixty\s*days|ninety\s*days|one hundred twenty/i.test(text)) {
     indiaSpecificFlags.push(
       makeRisk(
-        "MSME payment delay exposure",
+        "WARNING: MSME payment delay exposure",
         "High",
-        keywordSnippet(text, /90\s*days|120\s*days|ninety\s*days|one hundred twenty/i, "Payment period appears longer than MSME-friendly norms."),
+        keywordSnippet(text, /60\s*days|90\s*days|120\s*days|sixty\s*days|ninety\s*days|one hundred twenty/i, "Payment period appears longer than MSME-friendly norms."),
         isVendor
-          ? "For an MSME vendor, payment terms beyond 45 days can create cash-flow stress and weaken MSME SAMADHAAN protections."
-          : "For a client, payment terms beyond 45 days can create MSMED Act compliance exposure if the vendor is an MSME.",
-        "Replace with: invoices are payable within 30 days, and in any case no later than 45 days where MSME protections apply."
+          ? "For an MSME vendor, payment terms beyond 45 days can create cash-flow stress and may weaken statutory payment protections under the MSMED Act, 2006. Delayed payment may also trigger interest exposure for the buyer."
+          : "For a client, payment terms beyond 45 days can create MSMED Act, 2006 compliance exposure if the vendor is an MSME, including potential interest liability.",
+        "Replace with: invoices are payable within 30 days, and in any case no later than 45 days where MSME protections apply. Add interest consequences for delayed payment where legally applicable."
       )
     );
   }
@@ -239,7 +239,7 @@ Return ONLY valid JSON matching this TypeScript type:
   "pilotSummary": string
 }
 
-Prioritize India-specific issues: MSME SAMADHAAN 45-day payment protections, Section 138 NI Act cheque-bounce exposure, GST/payment documentation, Indian jurisdiction/arbitration practicality, DPDP/data protection, indemnity and liability caps. If reviewing for the Vendor / Service Provider, treat delayed payment, one-sided termination, broad indemnity, acceptance discretion, and foreign dispute resolution as especially important. If reviewing for the Client / Buyer, treat SLA gaps, IP ownership, data protection, audit rights, confidentiality, and vendor accountability as especially important. This is product guidance, not legal advice.
+Prioritize India-specific issues: MSME SAMADHAAN and MSMED Act 45-day payment protections, Section 138 NI Act cheque-bounce exposure, GST/payment documentation, Indian jurisdiction/arbitration practicality, DPDP/data protection, indemnity and liability caps. If a clause says payment in 60, 90, or 120 days, make this a prominent high-risk warning. Explain that for MSME vendors, payment beyond 45 days can create serious cash-flow risk and may trigger statutory interest exposure for buyers under the MSMED Act, 2006. If reviewing for the Vendor / Service Provider, treat delayed payment, one-sided termination, broad indemnity, acceptance discretion, and foreign dispute resolution as especially important. If reviewing for the Client / Buyer, treat SLA gaps, IP ownership, data protection, audit rights, confidentiality, and vendor accountability as especially important. This is product guidance, not legal advice.
 
 Contract text:
 ${text.slice(0, 28000)}`;

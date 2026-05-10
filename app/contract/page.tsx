@@ -236,7 +236,7 @@ export default function ContractAnalyzerPage() {
               {isAnalyzing ? "Reviewing..." : "Review My Contract"}
             </button>
             <button className="secondaryButton" type="button" disabled={isAnalyzing} onClick={() => void analyzeContract(true)}>
-              Try Sample
+              Use Sample Contract
             </button>
           </div>
 
@@ -286,9 +286,12 @@ export default function ContractAnalyzerPage() {
 
               <section className="negotiationPanel">
                 <div>
-                  <p className="eyebrow">Founder-ready output</p>
-                  <h3>Negotiation email</h3>
+                  <p className="eyebrow">Agentic next step</p>
+                  <h3>Generated negotiation script</h3>
                 </div>
+                <p className="negotiationIntro">
+                  ClauseRisk turns the risk report into a ready-to-send response you can share with the other party, your CA, or your lawyer.
+                </p>
                 <pre>{analysis.negotiationEmail}</pre>
                 <button className="whatsAppButton" type="button" onClick={shareOnWhatsApp}>
                   Share with CA / lawyer on WhatsApp
@@ -323,7 +326,7 @@ export default function ContractAnalyzerPage() {
                 </article>
               </div>
               <button className="primaryButton" type="button" onClick={() => void analyzeContract(true)}>
-                Run Sample Analysis
+                Use Sample Contract
               </button>
             </div>
           )}

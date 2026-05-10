@@ -2,7 +2,7 @@
 
 ## One-Liner
 
-ClauseRisk India helps Indian SMEs review vendor contracts in minutes using Gemini-powered document reasoning to flag risky clauses, missing protections, MSME payment issues, GST gaps, DPDP data risks, and negotiation-ready edits before they sign.
+ClauseRisk India is a Gemini-powered legal agent that helps Indian SMEs review vendor contracts in minutes, flag risky clauses, detect MSME/GST/DPDP exposure, and generate negotiation scripts before they sign.
 
 ## Why Now
 
@@ -70,6 +70,7 @@ Position this as an agentic legal workflow, not a summarizer. ClauseRisk does no
 Google/Gemini angle:
 
 - Gemini's long-context reasoning can analyze long contracts without chunking away important cross-clause context.
+- Gemini's 1M+ token context window creates a path to analyze entire contract folders at once, such as a Master Services Agreement plus multiple SOWs, purchase orders, annexures, and email terms, so contradictions are caught across documents.
 - Structured output is used to turn reasoning into product UI: risk score, issue cards, missing protections, and negotiation copy.
 - The product is localized for Indian commercial realities, which makes it a sovereign AI-style workflow rather than a generic legal wrapper.
 
@@ -117,6 +118,17 @@ Application traction phrasing:
 
 Successfully analyzed X contracts for Indian SMEs/founders in beta, identifying an average of Y critical risk clauses per document. Z testers said they would pay Rs. 499-Rs. 1,999 per review.
 
+## Execution Velocity Timeline
+
+Use this as a template and replace dates/counts with the true numbers:
+
+- May 10: Identified the ClauseRisk India wedge around Indian SME contract review.
+- May 10-11: Built and deployed the working MVP with PDF/DOCX/TXT ingestion, Gemini analysis, Vendor/Client perspective toggle, and India-specific risk cards.
+- May 11-12: Added privacy-first positioning, pricing signal, WhatsApp sharing, sample contract demo, CLM roadmap, and Google/Antler application strategy.
+- May 12 onward: Running pilots with SME founders, agencies, freelancers, CAs, and lawyers to validate payment exposure, willingness to pay, and report usefulness.
+
+Message: I built the full stack, legal prompt architecture, and deployment pipeline quickly as a solo founder. With Google mentorship and Antler's founder network, this velocity can become a venture-scale CLM platform.
+
 ## Founder-Market Fit Answer
 
 Use this structure:
@@ -147,8 +159,15 @@ Google's help would be most valuable in improving Gemini prompt architecture, ev
 
 Before submitting:
 
-- Record a 60-second demo video showing upload/paste, Vendor vs Client toggle, Gemini report generation, and WhatsApp share.
+- Record a 60-second demo video showing Use Sample Contract, Vendor vs Client toggle, Gemini report generation, MSME 45-day payment warning, generated negotiation script, and WhatsApp share.
 - Test the Vercel link on mobile, because reviewers may open it from a phone.
 - Include the live demo URL and GitHub URL.
 - Use the phrase "legal first-aid for Indian SMEs" to position the product as affordable first-pass review, not lawyer replacement.
 - Mention early pricing: free during beta, Rs. 499+ per review after validation.
+
+## Application Keywords
+
+- Problem: 63 million Indian MSMEs lack affordable legal counsel and often sign contracts with predatory payment terms, GST gaps, DPDP exposure, and expensive dispute clauses.
+- Solution: a Gemini-powered legal agent that provides instant, India-specific risk audits and negotiation scripts for a fraction of the cost of a law firm.
+- Technology: Gemini API today; Vertex AI planned for enterprise-grade security, evals, observability, and scalable deployment.
+- Future: a legal operating system for Indian SMEs, expanding from review into drafting, negotiation, e-signature, storage, renewals, and dispute workflows.

@@ -3582,6 +3582,12 @@ select:focus {
   padding-top: 16px;
 }
 
+.negotiationIntro {
+  margin: -4px 0 0;
+  color: #53627a;
+  line-height: 1.48;
+}
+
 .negotiationPanel pre {
   overflow: auto;
   margin: 0;
