@@ -3601,6 +3601,8 @@ select:focus {
   margin: 8px auto 0;
 }
 
+.lawContextSection,
+.beforeAfterSection,
 .visionSection,
 .founderNote {
   width: min(1220px, 100%);
@@ -3612,17 +3614,105 @@ select:focus {
   padding: 22px;
 }
 
+.lawContextSection,
+.beforeAfterSection,
 .visionSection {
   display: grid;
   gap: 18px;
 }
 
+.lawContextSection h2,
+.beforeAfterSection h2,
 .visionSection h2,
 .founderNote h2 {
   max-width: 780px;
   margin-bottom: 0;
   font-size: clamp(1.45rem, 3vw, 2.1rem);
   line-height: 1.08;
+}
+
+.lawContextSection p:not(.eyebrow) {
+  max-width: 820px;
+  margin: 10px 0 0;
+  color: #53627a;
+  line-height: 1.55;
+}
+
+.lawFeatureGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.lawFeatureGrid article {
+  display: grid;
+  gap: 8px;
+  min-height: 136px;
+  align-content: start;
+  border: 1px solid #e1e9f2;
+  border-radius: 8px;
+  background: #fbfcff;
+  padding: 16px;
+}
+
+.lawFeatureGrid strong {
+  color: #172033;
+  font-size: 0.98rem;
+}
+
+.lawFeatureGrid span {
+  color: #53627a;
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.beforeAfterSection {
+  background:
+    linear-gradient(135deg, #ffffff, #f8faff);
+}
+
+.beforeAfterCopy {
+  display: grid;
+  gap: 6px;
+}
+
+.beforeAfterGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.beforeAfterGrid article {
+  display: grid;
+  gap: 10px;
+  min-height: 170px;
+  align-content: start;
+  border: 1px solid #e1e9f2;
+  border-radius: 8px;
+  background: white;
+  padding: 18px;
+}
+
+.beforeAfterGrid article:last-child {
+  border-color: #cfe9dc;
+  background: #f2fbf6;
+}
+
+.beforeAfterGrid span {
+  width: fit-content;
+  border-radius: 999px;
+  background: #eef3ff;
+  color: var(--accent);
+  padding: 5px 8px;
+  font-size: 0.7rem;
+  font-weight: 950;
+  text-transform: uppercase;
+}
+
+.beforeAfterGrid p {
+  margin: 0;
+  color: #243047;
+  line-height: 1.55;
 }
 
 .visionGrid {
@@ -3715,6 +3805,8 @@ select:focus {
   .contractHero,
   .contractWorkspace,
   .reportGrid,
+  .lawFeatureGrid,
+  .beforeAfterGrid,
   .visionGrid {
     grid-template-columns: 1fr;
   }

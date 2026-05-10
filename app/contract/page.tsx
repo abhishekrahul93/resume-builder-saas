@@ -287,18 +287,18 @@ export default function ContractAnalyzerPage() {
               <div className="ghostReport" aria-hidden="true">
                 <article>
                   <span className="riskBadge high">High</span>
-                  <strong>MSME payment delay exposure</strong>
-                  <p>Flags payment terms beyond 45 days and suggests compliant edits.</p>
+                  <strong>GST vendor agreement</strong>
+                  <p>Flags 90-day payment terms, GST documentation gaps, and broad indemnity.</p>
                 </article>
                 <article>
                   <span className="riskBadge medium">Medium</span>
-                  <strong>One-sided termination</strong>
-                  <p>Highlights short notice periods and unpaid transition risk.</p>
+                  <strong>Founders agreement</strong>
+                  <p>Highlights control rights, exit duties, assignment limits, and dispute venue.</p>
                 </article>
                 <article>
                   <span className="riskBadge high">High</span>
-                  <strong>Foreign jurisdiction burden</strong>
-                  <p>Finds costly dispute venues for India-based SMEs.</p>
+                  <strong>Service contract</strong>
+                  <p>Finds one-sided termination, unpaid transition risk, and missing SLAs.</p>
                 </article>
               </div>
               <button className="primaryButton" type="button" onClick={() => void analyzeContract(true)}>
@@ -307,6 +307,51 @@ export default function ContractAnalyzerPage() {
             </div>
           )}
         </section>
+      </section>
+
+      <section className="lawContextSection" aria-label="India-specific legal checks">
+        <div>
+          <p className="eyebrow">India-law context</p>
+          <h2>Built for the documents Indian SMEs actually sign.</h2>
+          <p>
+            ClauseRisk India checks contracts through a local commercial lens, including Indian Contract Act fundamentals, MSME payment timelines, GST documentation, DPDP data obligations, cheque payment exposure, and practical dispute resolution.
+          </p>
+        </div>
+        <div className="lawFeatureGrid">
+          <article>
+            <strong>Vendor Agreements</strong>
+            <span>Payment delays, acceptance discretion, indemnity, liability caps, GST clauses</span>
+          </article>
+          <article>
+            <strong>NDAs</strong>
+            <span>Confidentiality scope, survival periods, remedies, data handling, residual knowledge</span>
+          </article>
+          <article>
+            <strong>Service Contracts</strong>
+            <span>Scope creep, SLAs, termination, IP ownership, transition duties</span>
+          </article>
+          <article>
+            <strong>Founder Documents</strong>
+            <span>Control rights, obligations, dispute venue, assignment, notice clauses</span>
+          </article>
+        </div>
+      </section>
+
+      <section className="beforeAfterSection" aria-label="Before and after contract review">
+        <div className="beforeAfterCopy">
+          <p className="eyebrow">Before vs after</p>
+          <h2>From confusing clauses to negotiation-ready edits.</h2>
+        </div>
+        <div className="beforeAfterGrid">
+          <article>
+            <span>Before</span>
+            <p>Client shall pay Vendor within 90 days. Vendor shall indemnify Client for all indirect and consequential losses. Disputes shall be resolved in Singapore.</p>
+          </article>
+          <article>
+            <span>After ClauseRisk</span>
+            <p>Flagged as high risk for the vendor. Suggested 30-45 day payment terms, liability cap, exclusion of indirect damages, and India-based arbitration.</p>
+          </article>
+        </div>
       </section>
 
       <section className="visionSection" aria-label="ClauseRisk India product roadmap">

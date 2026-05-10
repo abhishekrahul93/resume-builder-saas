@@ -63,6 +63,14 @@ Current MVP:
 - distinguishes Vendor vs Client risk perspective
 - returns negotiation-ready text outputs
 
+Position this as an agentic legal workflow, not a summarizer. ClauseRisk does not just restate a contract; it identifies risk, classifies severity, explains business impact, suggests counter-clauses, and prepares a negotiation email that can be shared with a CA or lawyer.
+
+Google/Gemini angle:
+
+- Gemini's long-context reasoning can analyze long contracts without chunking away important cross-clause context.
+- Structured output is used to turn reasoning into product UI: risk score, issue cards, missing protections, and negotiation copy.
+- The product is localized for Indian commercial realities, which makes it a sovereign AI-style workflow rather than a generic legal wrapper.
+
 Google help requested:
 
 We need Google Cloud architect guidance on optimizing Gemini for long-context contract parsing, structured output reliability, document privacy, latency, and cost. We also want GTM help reaching India’s MSME base through channels such as Google Workspace, Google Pay for Business, and SME partner ecosystems.
@@ -103,6 +111,10 @@ Aim to collect:
 - 3 testimonials
 - 1-2 written pilot confirmations or LOIs
 
+Application traction phrasing:
+
+Successfully analyzed X contracts for Indian SMEs/founders in beta, identifying an average of Y critical risk clauses per document. Z testers said they would pay Rs. 499-Rs. 1,999 per review.
+
 ## Founder-Market Fit Answer
 
 Use this structure:
@@ -124,3 +136,13 @@ Do not apologize for being solo. Frame it as an execution advantage:
 The biggest technical challenge is AI accuracy and reliability in Indian legal/commercial context. The frontend and deployment are manageable, but contract review needs consistent issue spotting, perspective-aware reasoning, structured output, and careful handling of jurisdiction-specific risks such as MSME payment timelines, DPDP obligations, GST documentation, Section 138 cheque exposure, liability caps, and arbitration practicality.
 
 Google's help would be most valuable in improving Gemini prompt architecture, evals, structured output reliability, latency, privacy design, and cost per contract review.
+
+## Submission Checklist
+
+Before submitting:
+
+- Record a 60-second demo video showing upload/paste, Vendor vs Client toggle, Gemini report generation, and WhatsApp share.
+- Test the Vercel link on mobile, because reviewers may open it from a phone.
+- Include the live demo URL and GitHub URL.
+- Use the phrase "legal first-aid for Indian SMEs" to position the product as affordable first-pass review, not lawyer replacement.
+- Mention early pricing: free during beta, Rs. 499+ per review after validation.
