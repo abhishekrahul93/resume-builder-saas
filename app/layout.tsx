@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CareerForge Resume Builder",
-  description: "AI-powered resume builder for polished, ATS-ready CVs"
+  title: {
+    default: "ClauseRisk India",
+    template: "%s | ClauseRisk India"
+  },
+  description: "Gemini-powered contract risk review for Indian SMEs"
 };
 
 export default function RootLayout({
