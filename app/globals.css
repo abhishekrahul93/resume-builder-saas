@@ -3382,6 +3382,10 @@ select:focus {
   box-shadow: 0 8px 18px rgba(23, 32, 51, 0.08);
 }
 
+.toneControl div {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .contractTextArea {
   margin: 0;
 }

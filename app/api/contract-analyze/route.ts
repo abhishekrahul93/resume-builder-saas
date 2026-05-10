@@ -30,6 +30,7 @@ type ContractAnalysis = {
 };
 
 type ReviewPerspective = "vendor" | "client";
+type NegotiationTone = "professional" | "firm" | "legal";
 
 const fallbackContract = `Vendor Services Agreement
 
@@ -80,7 +81,37 @@ function perspectiveLabel(perspective: ReviewPerspective) {
   return perspective === "vendor" ? "Vendor / Service Provider" : "Client / Buyer";
 }
 
-function analyzeLocally(text: string, perspective: ReviewPerspective): ContractAnalysis {
+function toneInstruction(tone: NegotiationTone) {
+  if (tone === "firm") {
+    return "firm but commercial, direct about required edits, and clear that signing cannot proceed until the issues are resolved";
+  }
+
+  if (tone === "legal") {
+    return "legal-notice style, formal, rights-preserving, and explicit about statutory/compliance concerns without making threats beyond the contract text";
+  }
+
+  return "polite and professional, collaborative, and suitable for an early negotiation email";
+}
+
+function localNegotiationMessage(isVendor: boolean, tone: NegotiationTone) {
+  if (tone === "legal") {
+    return isVendor
+      ? "We are unable to accept the draft in its current form. The payment, liability, termination, and dispute resolution clauses require revision to preserve our commercial and statutory rights, including MSME payment protections where applicable. Please revise the draft to provide payment within 30 days and no later than 45 days where MSME protections apply, remove indirect and consequential damages, cap liability to fees paid, and use India-based dispute resolution."
+      : "We are unable to proceed without clearer service levels, data protection obligations, IP ownership, audit rights, and India-based dispute resolution. Please revise the draft to reflect these protections and ensure the vendor's responsibilities are measurable and enforceable.";
+  }
+
+  if (tone === "firm") {
+    return isVendor
+      ? "Before we can move forward, we need the draft revised on a few non-negotiable points: payment within 30 days and no later than 45 days where MSME protections apply, a fair liability cap, exclusion of indirect damages, payment for completed work on termination, and practical India-based dispute resolution."
+      : "Before we can move forward, we need measurable SLAs, clear data protection duties, IP ownership, audit rights, proportionate liability, and practical India-based dispute resolution added to the draft.";
+  }
+
+  return isVendor
+    ? "Thanks for sharing the draft. Before we proceed, we would like to align a few vendor protections: payment should be due within 30 days and no later than 45 days where MSME protections apply, liability should be capped to fees paid, indirect damages should be excluded, termination should include payment for completed work, and dispute resolution should be practical for an India-based SME."
+    : "Thanks for sharing the draft. Before we proceed, we would like to align a few client protections: service levels should be measurable, data protection obligations should be specific, IP ownership should be clear, liability should be proportionate, and dispute resolution should be practical for an India-based business.";
+}
+
+function analyzeLocally(text: string, perspective: ReviewPerspective, tone: NegotiationTone): ContractAnalysis {
   const risks: ContractRisk[] = [];
   const indiaSpecificFlags: ContractRisk[] = [];
   const missingProtections: string[] = [];
@@ -93,7 +124,7 @@ function analyzeLocally(text: string, perspective: ReviewPerspective): ContractA
         "High",
         keywordSnippet(text, /60\s*days|90\s*days|120\s*days|sixty\s*days|ninety\s*days|one hundred twenty/i, "Payment period appears longer than MSME-friendly norms."),
         isVendor
-          ? "For an MSME vendor, payment terms beyond 45 days can create cash-flow stress and may weaken statutory payment protections under the MSMED Act, 2006. Delayed payment may also trigger interest exposure for the buyer."
+          ? "For an MSME vendor, payment terms beyond 45 days can create cash-flow stress and may weaken statutory payment protections under the MSMED Act, 2006. Where the Act applies, delayed payment may support a claim for compound interest at three times the RBI bank rate."
           : "For a client, payment terms beyond 45 days can create MSMED Act, 2006 compliance exposure if the vendor is an MSME, including potential interest liability.",
         "Replace with: invoices are payable within 30 days, and in any case no later than 45 days where MSME protections apply. Add interest consequences for delayed payment where legally applicable."
       )
@@ -198,9 +229,7 @@ function analyzeLocally(text: string, perspective: ReviewPerspective): ContractA
     negotiationEmail: [
       "Hi,",
       "",
-      isVendor
-        ? "Thanks for sharing the draft. Before we proceed, we would like to align a few vendor protections: payment should be due within 30 days and no later than 45 days where MSME protections apply, liability should be capped to fees paid, indirect damages should be excluded, termination should include payment for completed work, and dispute resolution should be practical for an India-based SME."
-        : "Thanks for sharing the draft. Before we proceed, we would like to align a few client protections: service levels should be measurable, data protection obligations should be specific, IP ownership should be clear, liability should be proportionate, and dispute resolution should be practical for an India-based business.",
+      localNegotiationMessage(isVendor, tone),
       "",
       "Please share a revised draft reflecting these points so we can move ahead quickly.",
       "",
@@ -217,13 +246,15 @@ function extractJson(text: string) {
   return JSON.parse(raw) as Omit<ContractAnalysis, "source">;
 }
 
-async function analyzeWithGemini(text: string, perspective: ReviewPerspective) {
+async function analyzeWithGemini(text: string, perspective: ReviewPerspective, tone: NegotiationTone) {
   const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     return null;
   }
 
   const prompt = `You are an AI contract review copilot for Indian SMEs. Review this contract from the perspective of the ${perspectiveLabel(perspective)}. Every risk, verdict, suggested edit, missing protection, and negotiation email must be written for that party. Do not switch perspectives.
+
+Write the negotiationEmail in this tone: ${toneInstruction(tone)}.
 
 Return ONLY valid JSON matching this TypeScript type:
 {
@@ -239,7 +270,7 @@ Return ONLY valid JSON matching this TypeScript type:
   "pilotSummary": string
 }
 
-Prioritize India-specific issues: MSME SAMADHAAN and MSMED Act 45-day payment protections, Section 138 NI Act cheque-bounce exposure, GST/payment documentation, Indian jurisdiction/arbitration practicality, DPDP/data protection, indemnity and liability caps. If a clause says payment in 60, 90, or 120 days, make this a prominent high-risk warning. Explain that for MSME vendors, payment beyond 45 days can create serious cash-flow risk and may trigger statutory interest exposure for buyers under the MSMED Act, 2006. If reviewing for the Vendor / Service Provider, treat delayed payment, one-sided termination, broad indemnity, acceptance discretion, and foreign dispute resolution as especially important. If reviewing for the Client / Buyer, treat SLA gaps, IP ownership, data protection, audit rights, confidentiality, and vendor accountability as especially important. This is product guidance, not legal advice.
+Prioritize India-specific issues: MSME SAMADHAAN and MSMED Act 45-day payment protections, Section 138 NI Act cheque-bounce exposure, GST/payment documentation, Indian jurisdiction/arbitration practicality, DPDP/data protection, indemnity and liability caps. If a clause says payment in 60, 90, or 120 days, make this a prominent high-risk warning. Explain that for MSME vendors, payment beyond 45 days can create serious cash-flow risk and, where the MSMED Act applies, may support a claim for compound interest at three times the RBI bank rate. If reviewing for the Vendor / Service Provider, treat delayed payment, one-sided termination, broad indemnity, acceptance discretion, and foreign dispute resolution as especially important. If reviewing for the Client / Buyer, treat SLA gaps, IP ownership, data protection, audit rights, confidentiality, and vendor accountability as especially important. This is product guidance, not legal advice.
 
 Contract text:
 ${text.slice(0, 28000)}`;
@@ -276,6 +307,8 @@ export async function POST(request: Request) {
   const useSample = formData.get("sample") === "true";
   const rawPerspective = formData.get("perspective");
   const perspective: ReviewPerspective = rawPerspective === "client" ? "client" : "vendor";
+  const rawTone = formData.get("tone");
+  const tone: NegotiationTone = rawTone === "firm" || rawTone === "legal" ? rawTone : "professional";
 
   try {
     let text = typeof pastedText === "string" ? pastedText : "";
@@ -296,8 +329,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Paste contract text or upload a PDF, DOCX, or TXT file." }, { status: 400 });
     }
 
-    const geminiResult = await analyzeWithGemini(cleaned, perspective);
-    return NextResponse.json(geminiResult || analyzeLocally(cleaned, perspective));
+    const geminiResult = await analyzeWithGemini(cleaned, perspective, tone);
+    return NextResponse.json(geminiResult || analyzeLocally(cleaned, perspective, tone));
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Could not analyze this contract." }, { status: 400 });
   }

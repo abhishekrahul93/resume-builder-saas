@@ -18,7 +18,7 @@ ClauseRisk India lets a founder upload or paste a contract, choose whether they 
 - India-specific legal/commercial flags
 - suggested clause edits
 - missing protections checklist
-- negotiation-ready email
+- negotiation-ready script in polite, firm, or legal notice style
 - WhatsApp share flow for CA/lawyer review
 
 ## Four-Pillar CLM Vision
@@ -35,6 +35,8 @@ ClauseRisk India starts with review, then expands into contract lifecycle manage
 Contract review is the wedge. It is the highest-pain moment for SMEs because the founder already has a contract in hand and needs a fast answer before signing. Once ClauseRisk earns trust at the review stage, it can naturally expand into drafting, negotiation, e-sign, storage, and renewals.
 
 Payment exposure is the wedge inside the wedge. Indian SMEs immediately understand delayed invoice risk: 60-120 day payment terms, vague acceptance clauses, and continued work obligations can create direct cash-flow pain. If beta users consistently choose MSME/payment terms as the most useful flag, the first GTM wedge should be vendor-side cash-flow protection.
+
+MSME interest ROI angle: where MSMED Act protections apply, delayed payment beyond the statutory window may support claims for compound interest at three times the RBI bank rate. This reframes ClauseRisk from generic legal tech into cash-flow protection for Indian MSMEs.
 
 ## India-Specific Differentiation
 
@@ -65,7 +67,9 @@ Current MVP:
 - distinguishes Vendor vs Client risk perspective
 - returns negotiation-ready text outputs
 
-Position this as an agentic legal workflow, not a summarizer. ClauseRisk does not just restate a contract; it identifies risk, classifies severity, explains business impact, suggests counter-clauses, and prepares a negotiation email that can be shared with a CA or lawyer.
+Position this as an agentic legal workflow, not a summarizer. ClauseRisk does not just restate a contract; it identifies risk, classifies severity, explains business impact, suggests counter-clauses, and prepares a negotiation script that can be shared with a CA or lawyer.
+
+The negotiation tone toggle makes the agent feel premium: the same risk report can produce a polite founder email, a firmer commercial response, or a formal legal-notice-style draft.
 
 Google/Gemini angle:
 
@@ -159,7 +163,7 @@ Google's help would be most valuable in improving Gemini prompt architecture, ev
 
 Before submitting:
 
-- Record a 60-second demo video showing Use Sample Contract, Vendor vs Client toggle, Gemini report generation, MSME 45-day payment warning, generated negotiation script, and WhatsApp share.
+- Record a 60-second demo video showing Use Sample Contract, Vendor vs Client toggle, negotiation tone toggle, Gemini report generation, MSME 45-day payment warning, generated negotiation script, and WhatsApp share.
 - Test the Vercel link on mobile, because reviewers may open it from a phone.
 - Include the live demo URL and GitHub URL.
 - Use the phrase "legal first-aid for Indian SMEs" to position the product as affordable first-pass review, not lawyer replacement.

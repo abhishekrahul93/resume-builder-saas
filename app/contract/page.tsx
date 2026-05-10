@@ -28,6 +28,7 @@ type ContractAnalysis = {
 };
 
 type ReviewPerspective = "vendor" | "client";
+type NegotiationTone = "professional" | "firm" | "legal";
 
 const sampleContract = `Vendor Services Agreement
 
@@ -54,6 +55,7 @@ export default function ContractAnalyzerPage() {
   const [contractText, setContractText] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [perspective, setPerspective] = useState<ReviewPerspective>("vendor");
+  const [tone, setTone] = useState<NegotiationTone>("professional");
   const [analysis, setAnalysis] = useState<ContractAnalysis | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [message, setMessage] = useState("");
@@ -74,6 +76,7 @@ export default function ContractAnalyzerPage() {
       }
       formData.append("text", useSample ? sampleContract : contractText);
       formData.append("perspective", perspective);
+      formData.append("tone", tone);
       if (useSample) {
         formData.append("sample", "true");
       }
@@ -163,7 +166,7 @@ export default function ContractAnalyzerPage() {
           </article>
           <article>
             <strong>MSME protection</strong>
-            <span>Checks whether payment language should align with 45-day MSME expectations.</span>
+            <span>Checks whether payment language should align with 45-day MSME expectations and interest exposure.</span>
           </article>
           <article>
             <strong>Willingness to pay</strong>
@@ -212,6 +215,33 @@ export default function ContractAnalyzerPage() {
                 onClick={() => setPerspective("client")}
               >
                 Client
+              </button>
+            </div>
+          </fieldset>
+
+          <fieldset className="perspectiveControl toneControl">
+            <legend>Negotiation tone</legend>
+            <div>
+              <button
+                className={tone === "professional" ? "active" : ""}
+                type="button"
+                onClick={() => setTone("professional")}
+              >
+                Polite
+              </button>
+              <button
+                className={tone === "firm" ? "active" : ""}
+                type="button"
+                onClick={() => setTone("firm")}
+              >
+                Firm
+              </button>
+              <button
+                className={tone === "legal" ? "active" : ""}
+                type="button"
+                onClick={() => setTone("legal")}
+              >
+                Legal Notice
               </button>
             </div>
           </fieldset>
@@ -290,7 +320,7 @@ export default function ContractAnalyzerPage() {
                   <h3>Generated negotiation script</h3>
                 </div>
                 <p className="negotiationIntro">
-                  ClauseRisk turns the risk report into a ready-to-send response you can share with the other party, your CA, or your lawyer.
+                  ClauseRisk turns the risk report into a ready-to-send response in your selected tone: polite, firm, or legal notice style.
                 </p>
                 <pre>{analysis.negotiationEmail}</pre>
                 <button className="whatsAppButton" type="button" onClick={shareOnWhatsApp}>
