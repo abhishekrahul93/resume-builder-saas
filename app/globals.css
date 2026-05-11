@@ -3896,12 +3896,14 @@ select:focus {
   .contractActions,
   .contractMetrics,
   .pilotLearningGrid,
+  .toneControl div,
   .ghostReport {
     grid-template-columns: 1fr;
   }
 
   .contractNav .primaryButton,
-  .contractNav .secondaryButton {
+  .contractNav .secondaryButton,
+  .whatsAppButton {
     width: 100%;
   }
 }

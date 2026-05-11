@@ -87,7 +87,7 @@ function toneInstruction(tone: NegotiationTone) {
   }
 
   if (tone === "legal") {
-    return "legal-notice style, formal, rights-preserving, and explicit about statutory/compliance concerns without making threats beyond the contract text";
+    return "legal-notice style using formal Indian business-legal phrasing. Include phrases such as 'Without prejudice', 'in light of the applicable statutory provisions', 'we reserve all rights and remedies available under law', and 'please treat this as a formal request for revision'. Keep it rights-preserving and explicit about statutory/compliance concerns without making threats beyond the contract text";
   }
 
   return "polite and professional, collaborative, and suitable for an early negotiation email";
@@ -96,8 +96,8 @@ function toneInstruction(tone: NegotiationTone) {
 function localNegotiationMessage(isVendor: boolean, tone: NegotiationTone) {
   if (tone === "legal") {
     return isVendor
-      ? "We are unable to accept the draft in its current form. The payment, liability, termination, and dispute resolution clauses require revision to preserve our commercial and statutory rights, including MSME payment protections where applicable. Please revise the draft to provide payment within 30 days and no later than 45 days where MSME protections apply, remove indirect and consequential damages, cap liability to fees paid, and use India-based dispute resolution."
-      : "We are unable to proceed without clearer service levels, data protection obligations, IP ownership, audit rights, and India-based dispute resolution. Please revise the draft to reflect these protections and ensure the vendor's responsibilities are measurable and enforceable.";
+      ? "Without prejudice to our rights and remedies available under law, we are unable to accept the draft in its current form. In light of the applicable statutory provisions, including MSME payment protections where applicable, the payment, liability, termination, and dispute resolution clauses require revision. Please treat this as a formal request to revise the draft to provide payment within 30 days and no later than 45 days where MSME protections apply, remove indirect and consequential damages, cap liability to fees paid, and use India-based dispute resolution."
+      : "Without prejudice to our rights and remedies available under law, we are unable to proceed without clearer service levels, data protection obligations, IP ownership, audit rights, and India-based dispute resolution. Please treat this as a formal request to revise the draft to reflect these protections and ensure the vendor's responsibilities are measurable and enforceable.";
   }
 
   if (tone === "firm") {
