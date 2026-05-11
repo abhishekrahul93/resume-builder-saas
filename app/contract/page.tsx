@@ -29,10 +29,19 @@ type ContractAnalysis = {
 
 type ReviewPerspective = "vendor" | "client";
 type NegotiationTone = "professional" | "firm" | "legal";
+type SampleKey = "vendor" | "founders" | "service";
 
-const sampleContract = `Vendor Services Agreement
+const sampleContracts: Record<SampleKey, string> = {
+  vendor: `GST Vendor Agreement
 
-The Client shall pay the Vendor within 90 days from receipt of invoice. Any disputes shall be subject to arbitration in Singapore. The Vendor shall indemnify the Client for all losses, claims, penalties, indirect damages, and consequential losses arising from the services. Either party may terminate this agreement with 5 days written notice. The Vendor shall maintain confidentiality. Cheque payments may be accepted at Client discretion. GST will be paid as applicable.`;
+The Client shall pay the Vendor within 90 days from receipt of invoice. Any disputes shall be subject to arbitration in Singapore. The Vendor shall indemnify the Client for all losses, claims, penalties, indirect damages, and consequential losses arising from the services. Either party may terminate this agreement with 5 days written notice. The Vendor shall maintain confidentiality. Cheque payments may be accepted at Client discretion. GST will be paid as applicable, and the Vendor shall be responsible for any GST invoice errors or penalties.`,
+  founders: `Founders Agreement
+
+Founder A will provide product leadership and Founder B will provide sales support. Founder A may transfer shares to any third party with written notice. Any dispute shall be resolved in Singapore. Either founder may exit with 7 days notice without transition duties. Intellectual property created before or after incorporation may be used by either founder without restriction.`,
+  service: `Service Contract
+
+The Agency shall provide website maintenance, monthly reporting, and ad hoc technical support. The Client may reject deliverables at its sole discretion and withhold payment until final written approval. The Client may terminate with 5 days notice. No service levels, response times, uptime standards, or transition obligations are defined. The Agency shall continue work during internal payment approval delays.`
+};
 
 function levelClass(level: RiskLevel) {
   return level.toLowerCase();
@@ -65,19 +74,20 @@ export default function ContractAnalyzerPage() {
     return [...analysis.indiaSpecificFlags, ...analysis.risks];
   }, [analysis]);
 
-  async function analyzeContract(useSample = false) {
+  async function analyzeContract(sampleKey?: SampleKey) {
     setIsAnalyzing(true);
     setMessage("");
 
     try {
+      const sampleText = sampleKey ? sampleContracts[sampleKey] : "";
       const formData = new FormData();
-      if (file && !useSample) {
+      if (file && !sampleKey) {
         formData.append("file", file);
       }
-      formData.append("text", useSample ? sampleContract : contractText);
+      formData.append("text", sampleKey ? sampleText : contractText);
       formData.append("perspective", perspective);
       formData.append("tone", tone);
-      if (useSample) {
+      if (sampleKey) {
         formData.append("sample", "true");
       }
 
@@ -93,8 +103,8 @@ export default function ContractAnalyzerPage() {
       }
 
       setAnalysis(result);
-      if (useSample) {
-        setContractText(sampleContract);
+      if (sampleKey) {
+        setContractText(sampleText);
         setFile(null);
       }
     } catch {
@@ -118,9 +128,6 @@ export default function ContractAnalyzerPage() {
           <strong>ClauseRisk India</strong>
         </Link>
         <div>
-          <Link className="secondaryButton" href="/">
-            Resume app
-          </Link>
           <a className="primaryButton" href="https://goo.gle/gfs_immersion2026" target="_blank" rel="noreferrer">
             Apply to GFS
           </a>
@@ -130,9 +137,9 @@ export default function ContractAnalyzerPage() {
       <section className="contractHero">
         <div>
           <p className="eyebrow">AI contract copilot for Indian SMEs</p>
-          <h1>Review risky vendor clauses before you sign.</h1>
+          <h1>Flag the clause that delays your payment by 90 days before you sign.</h1>
           <p>
-            Upload a contract or paste text. The analyzer flags MSME payment exposure, Section 138 cheque risk, GST gaps, foreign jurisdiction, liability traps, and missing protections.
+            Upload a contract or paste text. ClauseRisk catches MSME payment traps, GST gaps, Section 138 cheque risk, foreign jurisdiction, liability traps, and missing protections.
           </p>
           <div className="pilotSignal" aria-label="Target pilot segments">
             <span>Built for early pilots in SaaS, agencies, retail, and services</span>
@@ -150,6 +157,23 @@ export default function ContractAnalyzerPage() {
           <article>
             <strong>Gemini</strong>
             <span>document reasoning ready</span>
+          </article>
+        </div>
+      </section>
+
+      <section className="beforeAfterSection priorityProof" aria-label="Before and after contract review">
+        <div className="beforeAfterCopy">
+          <p className="eyebrow">Before vs after</p>
+          <h2>From a risky payment clause to negotiation-ready edits.</h2>
+        </div>
+        <div className="beforeAfterGrid">
+          <article>
+            <span>Before</span>
+            <p>Client shall pay Vendor within 90 days. Vendor shall indemnify Client for all indirect and consequential losses. Disputes shall be resolved in Singapore.</p>
+          </article>
+          <article>
+            <span>After ClauseRisk</span>
+            <p>Flagged as high risk for the vendor. Suggested 30-45 day payment terms, liability cap, exclusion of indirect damages, and India-based arbitration.</p>
           </article>
         </div>
       </section>
@@ -185,6 +209,11 @@ export default function ContractAnalyzerPage() {
           <div className="trustSignal">
             <strong>Privacy-first beta</strong>
             <span>Your contract is processed for this review and not stored in a database.</span>
+          </div>
+
+          <div className="pricingCallout">
+            <strong>Free during beta</strong>
+            <span>Early access pricing starts at Rs. 499 per review.</span>
           </div>
 
           <label className="contractDrop">
@@ -262,20 +291,29 @@ export default function ContractAnalyzerPage() {
           {message ? <p className="contractError">{message}</p> : null}
 
           <div className="contractActions">
-            <button className="primaryButton" type="button" disabled={isAnalyzing} onClick={() => void analyzeContract(false)}>
+            <button className="primaryButton" type="button" disabled={isAnalyzing} onClick={() => void analyzeContract()}>
               {isAnalyzing ? "Reviewing..." : "Review My Contract"}
             </button>
-            <button className="secondaryButton" type="button" disabled={isAnalyzing} onClick={() => void analyzeContract(true)}>
+            <button className="secondaryButton" type="button" disabled={isAnalyzing} onClick={() => void analyzeContract("vendor")}>
               Use Sample Contract
             </button>
           </div>
 
           <p className="contractDisclaimer">Product preview only. Use a lawyer or CA for final advice before signing.</p>
-          <p className="betaPricing">Free during beta · early access pricing from Rs. 499/review</p>
         </aside>
 
         <section className="contractReport" aria-label="Contract risk report">
-          {analysis ? (
+          {isAnalyzing ? (
+            <div className="loadingReport">
+              <p className="eyebrow">Gemini review in progress</p>
+              <h2>Reading clauses, checking India-specific risks, and drafting your negotiation script.</h2>
+              <div className="loadingSteps" aria-label="Analysis progress">
+                <span>Extracting contract text</span>
+                <span>Checking MSME, GST, DPDP, liability, and jurisdiction</span>
+                <span>Generating risk cards and negotiation script</span>
+              </div>
+            </div>
+          ) : analysis ? (
             <>
               <header className="contractReportHeader">
                 <div>
@@ -338,24 +376,27 @@ export default function ContractAnalyzerPage() {
               <p className="eyebrow">Live demo</p>
               <h2>Your contract risk report appears here.</h2>
               <p>For pilots, ask founders to share one vendor agreement, NDA, purchase order, or payment clause. Export the findings as anonymized traction.</p>
-              <div className="ghostReport" aria-hidden="true">
-                <article>
+              <div className="ghostReport">
+                <article className="sampleCard">
                   <span className="riskBadge high">High</span>
                   <strong>GST vendor agreement</strong>
                   <p>Flags 90-day payment terms, GST documentation gaps, and broad indemnity.</p>
+                  <button type="button" onClick={() => void analyzeContract("vendor")}>Run this sample</button>
                 </article>
-                <article>
+                <article className="sampleCard">
                   <span className="riskBadge medium">Medium</span>
                   <strong>Founders agreement</strong>
                   <p>Highlights control rights, exit duties, assignment limits, and dispute venue.</p>
+                  <button type="button" onClick={() => void analyzeContract("founders")}>Run this sample</button>
                 </article>
-                <article>
+                <article className="sampleCard">
                   <span className="riskBadge high">High</span>
                   <strong>Service contract</strong>
                   <p>Finds one-sided termination, unpaid transition risk, and missing SLAs.</p>
+                  <button type="button" onClick={() => void analyzeContract("service")}>Run this sample</button>
                 </article>
               </div>
-              <button className="primaryButton" type="button" onClick={() => void analyzeContract(true)}>
+              <button className="primaryButton" type="button" onClick={() => void analyzeContract("vendor")}>
                 Use Sample Contract
               </button>
             </div>
@@ -387,23 +428,6 @@ export default function ContractAnalyzerPage() {
           <article>
             <strong>Founder Documents</strong>
             <span>Control rights, obligations, dispute venue, assignment, notice clauses</span>
-          </article>
-        </div>
-      </section>
-
-      <section className="beforeAfterSection" aria-label="Before and after contract review">
-        <div className="beforeAfterCopy">
-          <p className="eyebrow">Before vs after</p>
-          <h2>From confusing clauses to negotiation-ready edits.</h2>
-        </div>
-        <div className="beforeAfterGrid">
-          <article>
-            <span>Before</span>
-            <p>Client shall pay Vendor within 90 days. Vendor shall indemnify Client for all indirect and consequential losses. Disputes shall be resolved in Singapore.</p>
-          </article>
-          <article>
-            <span>After ClauseRisk</span>
-            <p>Flagged as high risk for the vendor. Suggested 30-45 day payment terms, liability cap, exclusion of indirect damages, and India-based arbitration.</p>
           </article>
         </div>
       </section>

@@ -3318,6 +3318,27 @@ select:focus {
   line-height: 1.4;
 }
 
+.pricingCallout {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #b9c9ff;
+  border-radius: 8px;
+  background: #f8faff;
+  padding: 12px;
+}
+
+.pricingCallout strong {
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
+.pricingCallout span {
+  color: #172033;
+  font-size: 0.84rem;
+  font-weight: 850;
+  line-height: 1.4;
+}
+
 .contractDrop {
   display: grid;
   place-items: center;
@@ -3410,14 +3431,6 @@ select:focus {
 
 .contractDisclaimer {
   color: #667085;
-}
-
-.betaPricing {
-  margin: -6px 0 0;
-  color: #172033;
-  font-size: 0.82rem;
-  font-weight: 900;
-  line-height: 1.4;
 }
 
 .contractError {
@@ -3660,6 +3673,66 @@ select:focus {
   margin: 8px auto 0;
 }
 
+.loadingReport {
+  display: grid;
+  gap: 16px;
+  place-content: center;
+  min-height: 620px;
+  text-align: center;
+}
+
+.loadingReport h2 {
+  max-width: 700px;
+  margin: 0 auto;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  line-height: 1.12;
+}
+
+.loadingSteps {
+  display: grid;
+  gap: 8px;
+  width: min(620px, 100%);
+  margin: 0 auto;
+}
+
+.loadingSteps span {
+  position: relative;
+  border: 1px solid #dbe5ef;
+  border-radius: 8px;
+  background: white;
+  color: #53627a;
+  padding: 11px 12px 11px 36px;
+  text-align: left;
+  font-size: 0.86rem;
+  font-weight: 850;
+}
+
+.loadingSteps span::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--accent);
+  transform: translateY(-50%);
+  animation: pulseDot 900ms ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(-50%) scale(0.86);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-50%) scale(1.12);
+  }
+}
+
 .lawContextSection,
 .beforeAfterSection,
 .visionSection,
@@ -3832,7 +3905,6 @@ select:focus {
   gap: 10px;
   width: min(760px, 100%);
   margin: 8px auto 4px;
-  opacity: 0.62;
 }
 
 .ghostReport article {
@@ -3845,6 +3917,23 @@ select:focus {
   background: #fbfcff;
   padding: 14px;
   text-align: left;
+}
+
+.sampleCard button {
+  width: 100%;
+  min-height: 34px;
+  border: 1px solid #dbe5ef;
+  border-radius: 8px;
+  background: white;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.sampleCard button:hover {
+  border-color: var(--accent);
+  background: #eef3ff;
 }
 
 .ghostReport strong {

@@ -46,6 +46,14 @@ Track these before submission:
 - Willingness to pay: Rs. 499 / Rs. 999 / Rs. 1,999
 - Anonymous testimonial quotes
 
+## Social Proof Rule
+
+Do not invent social proof. Add one anonymized quote to the site only after a real tester gives permission.
+
+Good format:
+
+"Flagged a 90-day payment clause I had missed." - SaaS founder, Bengaluru
+
 ## Strong Traction Sentence Template
 
 In beta, ClauseRisk India analyzed [X] contracts for [Y] Indian SME/founder testers, identifying an average of [Z] high-risk clauses per document. The most cited risk was [payment exposure / indemnity / dispute venue], and [N] testers said they would pay Rs. [499/999/1999] per review.
