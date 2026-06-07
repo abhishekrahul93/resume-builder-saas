@@ -17,6 +17,31 @@ Main routes:
 - `/tailor` - AI CV Tailor & Enhancer, multilingual CV versions, saved versions, and AI Career Agent
 - `/dashboard` - SaaS dashboard for local account state, billing entry, and production integration status
 - `/company-intelligence` - AI Company Intelligence Platform portfolio project with website analysis, SWOT, KPI recommendations, competitor context, and executive report exports
+- `/revenuepulse` - RevenuePulse, a recruiter-facing revenue growth analytics platform with SaaS KPIs, data-quality checks, anomaly detection, and AI insight reports
+
+## Featured Portfolio Project: RevenuePulse
+
+The `/revenuepulse` route is the flagship Berlin/Germany analyst portfolio project. It is designed for Data Analyst, BI Analyst, Business Analyst, Growth Analyst, Product Analyst, Revenue Analyst, and Analytics Engineer applications.
+
+RevenuePulse simulates a realistic B2B SaaS and marketplace growth analytics environment with:
+
+- MRR, ARR, churn, retention, activation, CAC, LTV, trial-to-paid conversion, and campaign ROI monitoring
+- SQL-style metric definitions and an inspectable semantic layer
+- Python-style anomaly and root-cause logic for KPI movements
+- Data-quality checks for freshness, duplicates, attribution completeness, event reconciliation, and finance reconciliation
+- Segment and acquisition-channel performance views
+- Stakeholder-ready insight reports generated from grounded metrics, with an OpenAI-backed API when `OPENAI_API_KEY` is configured and a deterministic fallback otherwise
+
+Portfolio pitch:
+
+> Companies do not only need dashboards; they need trustworthy revenue metrics, explainable KPI movement, and clear business recommendations. RevenuePulse shows the full analyst workflow from metric definition to anomaly detection to executive reporting.
+
+Technical files:
+
+- `app/revenuepulse/page.tsx` - live dashboard and insight report UI
+- `app/api/revenuepulse/insight/route.ts` - grounded insight report API with local fallback and optional OpenAI generation
+- `lib/revenuepulse.ts` - synthetic SaaS growth dataset, KPI definitions, data-quality checks, anomaly logic, and report model
+- `docs/revenuepulse-case-study.md` - recruiter-friendly project narrative and demo script
 
 ## Featured Portfolio Project: AI Company Intelligence Platform
 
