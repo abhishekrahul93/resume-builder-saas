@@ -52,8 +52,6 @@ export default function RevenuePulsePage() {
   const maxMrr = useMemo(() => Math.max(...snapshot.monthlyMetrics.map((month) => month.mrr)), []);
   const latest = snapshot.monthlyMetrics[snapshot.monthlyMetrics.length - 1];
   const previous = snapshot.monthlyMetrics[snapshot.monthlyMetrics.length - 2];
-  const riskCount = snapshot.kpis.filter((kpi) => kpi.status === "risk").length + snapshot.dataQuality.filter((check) => check.status === "risk").length;
-  const watchCount = snapshot.kpis.filter((kpi) => kpi.status === "watch").length + snapshot.dataQuality.filter((check) => check.status === "watch").length;
 
   async function refreshInsightReport() {
     setReportState("loading");
@@ -79,40 +77,78 @@ export default function RevenuePulsePage() {
       <nav className="rp-nav" aria-label="RevenuePulse navigation">
         <Link className="rp-brand" href="/revenuepulse">
           <span>RP</span>
-          <strong>RevenuePulse</strong>
+          <div>
+            <strong>RevenuePulse</strong>
+            <small>Growth analytics platform</small>
+          </div>
         </Link>
         <div className="rp-nav-actions">
-          <Link href="/">CV Builder</Link>
-          <Link href="/company-intelligence">Company Intelligence</Link>
-          <Link href="/contract">ClauseRisk</Link>
+          <a href="#rp-dashboard">Dashboard</a>
+          <a href="#rp-report">Insight Report</a>
+          <button type="button" onClick={() => setActiveView("definitions")}>Metric Layer</button>
         </div>
       </nav>
 
-      <section className="rp-command">
-        <div className="rp-command-copy">
+      <section className="rp-hero">
+        <div className="rp-hero-copy">
           <p className="eyebrow">Revenue Growth Analytics Platform</p>
-          <h1>Monitor growth metrics, detect risk, and turn KPI movement into decisions.</h1>
+          <h1>RevenuePulse</h1>
+          <h2>Growth metrics, anomaly detection, and stakeholder-ready insight reports in one live demo.</h2>
           <p>
-            Live SaaS analytics case for Berlin data, BI, growth, product, and analytics engineering roles. The demo combines SQL-style metric definitions, Python anomaly logic, data-quality checks, and stakeholder-ready insight reporting.
+            Built for Berlin data, BI, growth, product, and analytics engineering roles. RevenuePulse combines SQL-style metric definitions, Python anomaly logic, data-quality checks, and AI-assisted reporting for SaaS and marketplace teams.
           </p>
+          <div className="rp-hero-actions">
+            <a className="rp-primary-link" href="#rp-dashboard">View live dashboard</a>
+            <button type="button" onClick={() => void refreshInsightReport()} disabled={reportState === "loading"}>
+              {reportState === "loading" ? "Generating..." : "Generate report"}
+            </button>
+          </div>
+          <div className="rp-proof-row" aria-label="RevenuePulse capabilities">
+            <span>SQL metric layer</span>
+            <span>Data-quality checks</span>
+            <span>Python anomaly logic</span>
+            <span>AI insight report</span>
+          </div>
         </div>
-        <div className="rp-command-panel" aria-label="Current month status">
-          <div>
-            <span>Current period</span>
-            <strong>{latest.month}</strong>
+
+        <div className="rp-hero-product" aria-label="RevenuePulse live product preview">
+          <div className="rp-product-top">
+            <div>
+              <span>Live growth review</span>
+              <strong>{latest.month}</strong>
+            </div>
+            <span className="rp-status rp-risk">Risk detected</span>
           </div>
-          <div>
-            <span>MRR movement</span>
-            <strong>{formatChange(((latest.mrr - previous.mrr) / previous.mrr) * 100)}</strong>
+          <div className="rp-product-metrics">
+            <div>
+              <span>MRR</span>
+              <strong>{formatCurrency(latest.mrr)}</strong>
+              <small>{formatChange(((latest.mrr - previous.mrr) / previous.mrr) * 100)} MoM</small>
+            </div>
+            <div>
+              <span>Gross churn</span>
+              <strong>{((latest.churnedCustomers / previous.activeCustomers) * 100).toFixed(1)}%</strong>
+              <small>{latest.churnedCustomers} churned accounts</small>
+            </div>
+            <div>
+              <span>CAC</span>
+              <strong>{formatCurrency(latest.marketingSpend / latest.paidConversions)}</strong>
+              <small>above target</small>
+            </div>
           </div>
-          <div>
-            <span>Open issues</span>
-            <strong>{riskCount} risk / {watchCount} watch</strong>
+          <div className="rp-product-chart" aria-label="Mini MRR trend">
+            {snapshot.monthlyMetrics.slice(-8).map((month) => (
+              <span key={month.month} style={{ height: `${Math.max(18, (month.mrr / maxMrr) * 104)}px` }} />
+            ))}
+          </div>
+          <div className="rp-product-report">
+            <span>Recommended decision</span>
+            <p>Pause weakest paid campaigns, investigate activation tracking, and launch a Seed SaaS retention save motion.</p>
           </div>
         </div>
       </section>
 
-      <section className="rp-kpi-grid" aria-label="RevenuePulse KPI summary">
+      <section id="rp-dashboard" className="rp-kpi-grid" aria-label="RevenuePulse KPI summary">
         {snapshot.kpis.map((kpi) => (
           <article className="rp-kpi-card" key={kpi.label}>
             <div>
@@ -327,7 +363,7 @@ export default function RevenuePulsePage() {
             </section>
           ) : null}
 
-          <section className="rp-report">
+          <section id="rp-report" className="rp-report">
             <div className="rp-section-heading">
               <div>
                 <p className="eyebrow">{report.source === "openai" ? "AI-generated" : "Grounded demo engine"}</p>
