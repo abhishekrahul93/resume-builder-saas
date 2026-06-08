@@ -94,6 +94,35 @@ export type InsightReport = {
   source: "grounded-demo-engine" | "openai";
 };
 
+export type CopilotSource = {
+  label: string;
+  type: "Metric" | "Anomaly" | "Data Quality" | "Segment" | "Channel";
+  detail: string;
+};
+
+export type CopilotEvaluation = {
+  groundedness: number;
+  completeness: number;
+  actionability: number;
+  hallucinationRisk: "Low" | "Medium" | "High";
+  checks: string[];
+};
+
+export type CopilotResponse = {
+  question: string;
+  answer: string;
+  nextActions: string[];
+  caveats: string[];
+  sources: CopilotSource[];
+  evaluation: CopilotEvaluation;
+  source: "grounded-demo-engine" | "openai";
+};
+
+export type CopilotQuestion = {
+  label: string;
+  question: string;
+};
+
 export type RevenuePulseSnapshot = {
   generatedAt: string;
   companyContext: {
@@ -111,6 +140,7 @@ export type RevenuePulseSnapshot = {
   dataQuality: DataQualityCheck[];
   metricDefinitions: MetricDefinition[];
   insightReport: InsightReport;
+  copilotQuestions: CopilotQuestion[];
 };
 
 const monthlyMetrics: MonthlyRevenueMetric[] = [
@@ -175,6 +205,25 @@ const metricDefinitions: MetricDefinition[] = [
     owner: "Marketing Analytics",
     definition: "Attributed campaign revenue divided by campaign spend for the same monthly cohort.",
     sql: "attributed_revenue_eur / nullif(marketing_spend_eur, 0)"
+  }
+];
+
+const copilotQuestions: CopilotQuestion[] = [
+  {
+    label: "Explain churn",
+    question: "Why did churn increase in May?"
+  },
+  {
+    label: "Validate MRR",
+    question: "Is the MRR drop real or caused by a data issue?"
+  },
+  {
+    label: "Cut spend",
+    question: "Which acquisition channel should we cut first?"
+  },
+  {
+    label: "CEO actions",
+    question: "What should the CEO do this week?"
   }
 ];
 
@@ -369,6 +418,142 @@ function buildInsightReport(current: MonthlyRevenueMetric, previous: MonthlyReve
   };
 }
 
+function source(label: string, type: CopilotSource["type"], detail: string): CopilotSource {
+  return { label, type, detail };
+}
+
+function evaluateAnswer(checks: string[], hallucinationRisk: CopilotEvaluation["hallucinationRisk"] = "Low"): CopilotEvaluation {
+  return {
+    groundedness: hallucinationRisk === "Low" ? 96 : 82,
+    completeness: 88,
+    actionability: 92,
+    hallucinationRisk,
+    checks
+  };
+}
+
+export function getRevenuePulseCopilotResponse(question: string): CopilotResponse {
+  const normalized = question.toLowerCase();
+  const current = monthlyMetrics[monthlyMetrics.length - 1];
+  const previous = monthlyMetrics[monthlyMetrics.length - 2];
+  const mrrDelta = current.mrr - previous.mrr;
+  const churnRate = (current.churnedCustomers / previous.activeCustomers) * 100;
+  const cac = current.marketingSpend / current.paidConversions;
+
+  if (/mrr|revenue|real|data issue|data quality|trust/i.test(question)) {
+    return {
+      question,
+      answer: `The MRR drop looks materially real, not just a reporting artifact. MRR moved ${formatPercent(percentChange(current.mrr, previous.mrr))} from ${previous.month} to ${current.month}, while finance reconciliation is within 0.6% and there are no duplicate active subscription IDs. The caveat is activation tracking: mobile activation events are undercounted by 8.1%, so product-funnel diagnosis needs reconciliation, but the revenue movement itself is trustworthy.`,
+      nextActions: [
+        "Treat the MRR decline as a real business incident and open a revenue recovery review.",
+        "Separate revenue decisions from activation tracking decisions until mobile events are reconciled.",
+        "Use strict and blended CAC views before changing all paid acquisition budgets."
+      ],
+      caveats: [
+        "Campaign attribution has 2.3% missing source values.",
+        "Mobile activation tracking is not clean enough for final product attribution."
+      ],
+      sources: [
+        source("MRR anomaly", "Anomaly", `${formatCurrency(mrrDelta)} month-over-month movement in May.`),
+        source("Finance reconciliation", "Data Quality", "Revenue mart is within 0.6% of the finance export."),
+        source("Subscription uniqueness", "Data Quality", "0 duplicate active subscription IDs in the May mart."),
+        source("MRR definition", "Metric", metricDefinitions[0].definition)
+      ],
+      evaluation: evaluateAnswer([
+        "Answer cites KPI movement, finance reconciliation, and duplicate checks.",
+        "Separates real revenue movement from activation tracking caveat.",
+        "Avoids claims outside the supplied RevenuePulse snapshot."
+      ]),
+      source: "grounded-demo-engine"
+    };
+  }
+
+  if (/churn|retention|customer/i.test(normalized)) {
+    return {
+      question,
+      answer: `Churn increased because the May cohort has a real retention issue concentrated in Seed SaaS customers. Churned accounts rose from ${previous.churnedCustomers} to ${current.churnedCustomers}, taking gross churn to ${formatPercent(churnRate)}. The segment table shows Seed SaaS has the weakest customer health: 8.9% churn, 57% activation, and 91% net revenue retention. That points to onboarding and early value realization, not only pricing or seasonality.`,
+      nextActions: [
+        "Create a save list of Seed SaaS accounts with low core-feature usage in the first 14 days.",
+        "Ask Customer Success to prioritize high-MRR Seed SaaS accounts before the next billing cycle.",
+        "Compare churned Seed SaaS accounts by activation status and acquisition channel."
+      ],
+      caveats: [
+        "The demo dataset is synthetic, so the operational recommendation is a portfolio simulation.",
+        "Activation tracking needs reconciliation before using mobile activation as the only churn driver."
+      ],
+      sources: [
+        source("Gross churn anomaly", "Anomaly", `${current.churnedCustomers - previous.churnedCustomers} more churned customers than the previous month.`),
+        source("Seed SaaS segment", "Segment", "8.9% churn, 57% activation, and 91% net revenue retention."),
+        source("Activation data quality", "Data Quality", "Mobile activation events are 8.1% lower than backend onboarding completions."),
+        source("Gross churn definition", "Metric", metricDefinitions[1].definition)
+      ],
+      evaluation: evaluateAnswer([
+        "Answer grounds churn diagnosis in anomaly, segment, and data-quality evidence.",
+        "Identifies the affected segment and avoids unsupported customer-level claims.",
+        "Includes an operational next step."
+      ]),
+      source: "grounded-demo-engine"
+    };
+  }
+
+  if (/channel|campaign|spend|cac|roi|cut|marketing/i.test(normalized)) {
+    return {
+      question,
+      answer: `Cut or pause Paid Social first, then review Paid Search. Both channels have high CAC at ${formatCurrency(458)} per customer, but Paid Social has the weakest ROI at 1.8x versus Paid Search at 2.1x. Organic and Partner channels are stronger alternatives, with much lower CAC and higher ROI. The safer move is not to stop all paid spend; it is to pause the weakest ad sets and reallocate test budget to Partner and Organic while attribution gaps are fixed.`,
+      nextActions: [
+        "Pause the lowest-performing Paid Social ad sets for one week.",
+        "Move a controlled test budget to Partner and Organic channels.",
+        "Re-run CAC payback with unattributed conversions included as a sensitivity case."
+      ],
+      caveats: [
+        "2.3% of paid conversions are missing campaign source.",
+        "Do not use channel ROI alone; combine it with trial quality and activation."
+      ],
+      sources: [
+        source("Paid Social", "Channel", "CAC EUR 458, ROI 1.8x, risk status."),
+        source("Paid Search", "Channel", "CAC EUR 458, ROI 2.1x, risk status."),
+        source("Attribution completeness", "Data Quality", "2.3% of paid conversions have missing campaign source."),
+        source("CAC definition", "Metric", metricDefinitions[3].definition),
+        source("Campaign ROI definition", "Metric", metricDefinitions[4].definition)
+      ],
+      evaluation: evaluateAnswer([
+        "Answer cites channel CAC, ROI, and attribution quality.",
+        "Recommendation includes a controlled experiment instead of a broad budget cut.",
+        "Mentions attribution caveat before budget decisions."
+      ]),
+      source: "grounded-demo-engine"
+    };
+  }
+
+  return {
+    question,
+    answer: `This week the CEO should treat May as a revenue-growth incident: MRR declined by ${formatCurrency(Math.abs(mrrDelta))}, churn rose to ${formatPercent(churnRate)}, activation weakened, and CAC increased to ${formatCurrency(cac)}. The most important leadership decision is to stop scaling inefficient acquisition until retention and activation are stabilized. The revenue data is trustworthy enough to act on, but the activation event mismatch should be fixed before assigning final product blame.`,
+    nextActions: [
+      "Run a revenue incident review with Growth, Product, Customer Success, and Finance.",
+      "Pause the weakest paid campaigns and shift budget to Partner and Organic tests.",
+      "Launch a Seed SaaS retention save motion focused on low early product usage.",
+      "Assign Product Analytics to reconcile mobile activation events with backend completions."
+    ],
+    caveats: [
+      "Activation diagnosis has an event-tracking caveat.",
+      "Campaign attribution is mostly complete but not perfect.",
+      "The demo is synthetic and built to show the analyst workflow."
+    ],
+    sources: [
+      source("MRR anomaly", "Anomaly", `${formatCurrency(mrrDelta)} month-over-month MRR movement.`),
+      source("CAC anomaly", "Anomaly", "Paid search and paid social spend increased while paid conversions dropped."),
+      source("Seed SaaS segment", "Segment", "Highest churn risk and lowest activation quality."),
+      source("Finance reconciliation", "Data Quality", "Revenue mart is within 0.6% of finance export.")
+    ],
+    evaluation: evaluateAnswer([
+      "Answer uses multiple source types: anomalies, segment data, and quality checks.",
+      "Recommendation is executive-level and action-oriented.",
+      "Caveats are explicit."
+    ]),
+    source: "grounded-demo-engine"
+  };
+}
+
 export function getRevenuePulseSnapshot(): RevenuePulseSnapshot {
   const current = monthlyMetrics[monthlyMetrics.length - 1];
   const previous = monthlyMetrics[monthlyMetrics.length - 2];
@@ -389,6 +574,7 @@ export function getRevenuePulseSnapshot(): RevenuePulseSnapshot {
     anomalies: buildAnomalies(current, previous),
     dataQuality: buildDataQualityChecks(),
     metricDefinitions,
-    insightReport: buildInsightReport(current, previous)
+    insightReport: buildInsightReport(current, previous),
+    copilotQuestions
   };
 }
